@@ -195,6 +195,7 @@ MODULE mp2_types
       REAL(KIND=dp)            :: eps_dist
       REAL(KIND=dp), DIMENSION(:), POINTER               :: ic_corr_list, ic_corr_list_beta, &
                                                             gw_eigenvalues, gw_eigenvalues_beta
+      INTEGER :: num_omega_points_im_time
       INTEGER :: print_exx
       LOGICAL :: do_gamma_only_sigma
    END TYPE

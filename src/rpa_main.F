@@ -1465,7 +1465,7 @@ CONTAINS
          starts_array_cm, starts_array_cm_mao_occ, starts_array_cm_mao_virt
       LOGICAL :: do_apply_ic_corr_to_gw, do_gw_im_time, do_ic_model, do_ic_opt_homo_lumo, &
          do_kpoints_cubic_RPA, do_kpoints_from_Gamma, do_periodic, do_ri_Sigma_x, first_cycle, &
-         first_cycle_periodic_correction, my_open_shell, print_ic_values
+         first_cycle_periodic_correction, my_open_shell, print_ic_values, do_gw_im_time_cc
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: do_GW_corr
       LOGICAL, ALLOCATABLE, DIMENSION(:, :, :)           :: cycle_due_to_sparse_dm, &
                                                             multiply_needed_occ, &
@@ -1537,6 +1537,7 @@ CONTAINS
       ic_corr_list_beta => mp2_env%ri_g0w0%ic_corr_list_beta
       do_kpoints_cubic_RPA = mp2_env%ri_rpa_im_time%do_im_time_kpoints
       do_kpoints_from_Gamma = SUM(mp2_env%ri_rpa_im_time%kp_grid) > 0
+      do_gw_im_time_cc = mp2_env%ri_g0w0%num_omega_points_im_time > 0
 
       ! For SOS-MP2 only gemm is implemented
       mm_style = wfc_mm_style_gemm
@@ -1561,9 +1562,14 @@ CONTAINS
       END IF
 
       IF (do_ic_model) THEN
-         ! image charge model only implemented for cubic scaling GW
+         ! image charge model only works with the integrals from cubic scaling GW
          CPASSERT(do_gw_im_time)
          CPASSERT(.NOT. do_periodic)
+      END IF
+
+      IF (do_gw_im_time_cc) THEN
+         ! Clenshaw-Curtis frequency grid instead of minimax frequency grid only for N^3 GW
+         CPASSERT(do_gw_im_time)
       END IF
 
       ! set up the least-square time grid and other matrices specifically for imag time
