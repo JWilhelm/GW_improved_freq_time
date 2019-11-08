@@ -83,7 +83,7 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief ...
-!> \param fm_mat_W_tau ...
+!> \param fm_mat_W ...
 !> \param cfm_mat_Q ...
 !> \param fm_mat_L_re ...
 !> \param fm_mat_L_im ...
@@ -102,12 +102,12 @@ CONTAINS
 !> \param mat_SinvVSinv ...
 !> \param do_W_and_not_V ...
 ! **************************************************************************************************
-   SUBROUTINE compute_Wc_real_space_tau_GW(fm_mat_W_tau, cfm_mat_Q, fm_mat_L_re, fm_mat_L_im, &
+   SUBROUTINE compute_Wc_real_space_tau_GW(fm_mat_W, cfm_mat_Q, fm_mat_L_re, fm_mat_L_im, &
                                            dimen_RI, num_integ_points, jquad, &
                                            ikp, tj, tau_tj, weights_cos_tf_w_to_t, ikp_local, &
                                            para_env, kpoints, qs_env, wkp_W, mat_SinvVSinv, do_W_and_not_V)
 
-      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W_tau
+      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
       TYPE(cp_cfm_type), POINTER                         :: cfm_mat_Q
       TYPE(cp_fm_type), POINTER                          :: fm_mat_L_re, fm_mat_L_im
       INTEGER                                            :: dimen_RI, num_integ_points, jquad, ikp
@@ -168,7 +168,7 @@ CONTAINS
       CALL cp_cfm_scale_and_add_fm(z_one, cfm_mat_L, gaussi, fm_mat_L_im)
 
       NULLIFY (fm_mat_work_global)
-      CALL cp_fm_create(fm_mat_work_global, fm_mat_W_tau(1)%matrix%matrix_struct)
+      CALL cp_fm_create(fm_mat_work_global, fm_mat_W(1)%matrix%matrix_struct)
       CALL cp_fm_set_all(fm_mat_work_global, 0.0_dp)
 
       NULLIFY (fm_mat_work_local)
@@ -335,10 +335,10 @@ CONTAINS
                weight = weights_cos_tf_w_to_t(iquad, jquad)*COS(tau*omega)
 
                IF (jquad == 1 .AND. ikp == 1) THEN
-                  CALL cp_fm_set_all(matrix=fm_mat_W_tau(iquad)%matrix, alpha=0.0_dp)
+                  CALL cp_fm_set_all(matrix=fm_mat_W(iquad)%matrix, alpha=0.0_dp)
                END IF
 
-               CALL cp_fm_scale_and_add(alpha=1.0_dp, matrix_a=fm_mat_W_tau(iquad)%matrix, beta=weight, matrix_b=fm_mat_work_global)
+               CALL cp_fm_scale_and_add(alpha=1.0_dp, matrix_a=fm_mat_W(iquad)%matrix, beta=weight, matrix_b=fm_mat_work_global)
 
             END DO
 
@@ -360,10 +360,10 @@ CONTAINS
                   weight = weights_cos_tf_w_to_t(iquad, jquad)*COS(tau*omega)
 
                   IF (jquad == 1 .AND. jkp == 1) THEN
-                     CALL cp_fm_set_all(matrix=fm_mat_W_tau(iquad)%matrix, alpha=0.0_dp)
+                     CALL cp_fm_set_all(matrix=fm_mat_W(iquad)%matrix, alpha=0.0_dp)
                   END IF
 
-                  CALL cp_fm_scale_and_add(alpha=1.0_dp, matrix_a=fm_mat_W_tau(iquad)%matrix, beta=weight, &
+                  CALL cp_fm_scale_and_add(alpha=1.0_dp, matrix_a=fm_mat_W(iquad)%matrix, beta=weight, &
                                            matrix_b=fm_mat_work_global)
 
                END DO

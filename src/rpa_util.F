@@ -1063,7 +1063,7 @@ CONTAINS
       CALL timeset(routineN, handle)
 
       IF (do_ri_sos_laplace_mp2) THEN
-         ! the first index of tau_tj starts with 0 (see mp2_weights)
+         ! the first index of tau_tj starts with 0 (see mp2_grids)
          CALL calc_fm_mat_S_laplace(fm_mat_S, first_cycle, homo, virtual, Eigenval, omega, omega_old)
 
       ELSE

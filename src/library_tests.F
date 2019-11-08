@@ -77,7 +77,7 @@ MODULE library_tests
                                               mp_sync,&
                                               mpi_perf_test
    USE minimax_exp,                     ONLY: validate_exp_minimax
-   USE mp2_weights,                     ONLY: test_least_square_ft
+   USE mp2_grids,                     ONLY: test_least_square_ft
    USE parallel_rng_types,              ONLY: GAUSSIAN,&
                                               UNIFORM,&
                                               check_rng,&

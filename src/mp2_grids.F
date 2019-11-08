@@ -8,7 +8,7 @@
 !> \par History
 !>      05.2019 Refactored from rpa_ri_gpw [Frederick Stein]
 ! **************************************************************************************************
-MODULE mp2_weights
+MODULE mp2_grids
    USE cp_fm_types,                     ONLY: cp_fm_get_info,&
                                               cp_fm_type
    USE cp_para_env,                     ONLY: cp_para_env_create,&
@@ -36,9 +36,9 @@ MODULE mp2_weights
 
    PRIVATE
 
-   CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'mp2_weights'
+   CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'mp2_grids'
 
-   PUBLIC :: get_minimax_weights, get_clenshaw_weights, test_least_square_ft
+   PUBLIC :: get_minimax_grid, get_clenshaw_grid, test_least_square_ft
 
 CONTAINS
 
@@ -70,7 +70,7 @@ CONTAINS
 !> \param dimen_ia_beta ...
 !> \param Eigenval_beta ...
 ! **************************************************************************************************
-   SUBROUTINE get_minimax_weights(para_env, unit_nr, homo, Eigenval, num_integ_points, &
+   SUBROUTINE get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, &
                                   do_im_time, do_ri_sos_laplace_mp2, do_print, tau_tj, tau_wj, qs_env, do_gw_im_time, &
                                   do_kpoints_cubic_RPA, ext_scaling, a_scaling, e_fermi, tj, wj, mp2_env, weights_cos_tf_t_to_w, &
                                   weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
@@ -98,7 +98,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: homo_beta, dimen_ia_beta
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_minimax_weights', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_minimax_grid', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, ierr, jquad, &
@@ -267,7 +267,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE get_minimax_weights
+   END SUBROUTINE get_minimax_grid
 
 ! **************************************************************************************************
 !> \brief ...
@@ -292,7 +292,7 @@ CONTAINS
 !> \param Eigenval_beta ...
 !> \param fm_mat_S_beta ...
 ! **************************************************************************************************
-   SUBROUTINE get_clenshaw_weights(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_integ_points, &
+   SUBROUTINE get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_integ_points, &
                                    num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, &
                                    ext_scaling, a_scaling, tj, wj, &
                                    homo_beta, virtual_beta, dimen_ia_beta, Eigenval_beta, fm_mat_S_beta)
@@ -312,7 +312,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mat_S_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_clenshaw_weights', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_clenshaw_grid', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, jquad
@@ -363,7 +363,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE get_clenshaw_weights
+   END SUBROUTINE get_clenshaw_grid
 
 ! **************************************************************************************************
 !> \brief ...
@@ -1569,4 +1569,4 @@ CONTAINS
 
    END SUBROUTINE
 
-END MODULE mp2_weights
+END MODULE mp2_grids
