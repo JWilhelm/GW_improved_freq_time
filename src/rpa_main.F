@@ -1605,8 +1605,6 @@ CONTAINS
 
          IF (my_do_gw) THEN
 
-            num_points_corr = mp2_env%ri_g0w0%num_omega_points
-
             CALL dbcsr_get_info(mat_P_global%matrix, &
                                 row_blk_size=RI_blk_sizes)
 
@@ -2089,7 +2087,7 @@ CONTAINS
                CALL GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
                                       nmo, num_fit_points, num_integ_points, &
-                                      num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
+                                      unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
@@ -2111,7 +2109,7 @@ CONTAINS
                CALL GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
                                       nmo, num_fit_points, num_integ_points, &
-                                      num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
+                                      unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
