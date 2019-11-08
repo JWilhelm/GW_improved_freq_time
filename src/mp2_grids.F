@@ -4,7 +4,8 @@
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
-!> \brief Routines to calculate weights for correlation methods
+!> \brief Routines to calculate frequency and time grids (integration points and weights) 
+!>        for correlation methods
 !> \par History
 !>      05.2019 Refactored from rpa_ri_gpw [Frederick Stein]
 ! **************************************************************************************************

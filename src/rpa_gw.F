@@ -134,7 +134,8 @@ CONTAINS
 !> \param mat_3c_overl_nnP_ic_reflected_beta ...
 ! **************************************************************************************************
    SUBROUTINE allocate_matrices_gw_im_time(cut_RI, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, homo, nmo, &
-                                           num_integ_points, unit_nr, my_group_L_sizes_im_time, my_group_L_starts_im_time, &
+                                           num_integ_points, num_points_W, unit_nr, &
+                                           my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                            row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                            para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
                                            mo_coeff, mat_dm_virt_local, mat_3c_overl_int_gw, &
@@ -147,7 +148,7 @@ CONTAINS
 
       INTEGER, INTENT(IN)                                :: cut_RI, gw_corr_lev_occ, &
                                                             gw_corr_lev_tot, gw_corr_lev_virt, &
-                                                            homo, nmo, num_integ_points, unit_nr
+                                                            homo, nmo, num_integ_points, unit_nr, num_points_W
       INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(IN)     :: my_group_L_sizes_im_time, &
                                                             my_group_L_starts_im_time, row_from_LLL
       INTEGER, DIMENSION(:), POINTER                     :: prim_blk_sizes, RI_blk_sizes
@@ -285,7 +286,7 @@ CONTAINS
       END IF
 
       NULLIFY (fm_mat_W)
-      ALLOCATE (fm_mat_W(num_integ_points))
+      ALLOCATE (fm_mat_W(num_points_W))
 
       DO jquad = 1, num_integ_points
 

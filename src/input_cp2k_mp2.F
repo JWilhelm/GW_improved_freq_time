@@ -970,8 +970,8 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="NUM_OMEGA_POINTS_IM_TIME", &
-                          description="If this number is larger than 0, then use a Clenshaw-Curtis grid for "// &
-                          "the frequency in low-scaling (imag. time) GW calculations. Putting more Clenshaw-Curtis "// &
+                          description="If this number is larger than NUM_INTEG_POINTS, then use a Clenshaw-Curtis grid "// &
+                          "for the frequency in low-scaling (imag. time) GW calculations. Putting more Clenshaw-Curtis "// &
                           "points than minimax points is computationally more expensive, but doesn't affect the "// &
                           "scaling and does improve the accuracy. Putting this parameter in normal N^4-scaling GW "// &
                           "calculation doesn't have any effect.", &

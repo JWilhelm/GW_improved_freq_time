@@ -1448,7 +1448,7 @@ CONTAINS
          handle3, iter_ev_sc, jquad, max_iter_bse, mm_style, my_num_dgemm_call, n_group_col, &
          n_group_row, nkp, nkp_self_energy, nmo, num_3c_repl, num_cells_dm, num_fit_points, &
          num_points_corr, num_Z_vectors, number_of_rec, number_of_rec_axk, number_of_rec_beta, &
-         number_of_send, number_of_send_axk, number_of_send_beta, size_P
+         number_of_send, number_of_send_axk, number_of_send_beta, size_P,num_points_W
       INTEGER, ALLOCATABLE, DIMENSION(:) :: ikp_local, map_rec_size, map_rec_size_axk, &
          map_rec_size_beta, map_send_size, map_send_size_axk, map_send_size_beta, &
          mepos_P_from_RI_row, my_group_L_sizes_im_time, my_group_L_starts_im_time, row_from_LLL, &
@@ -1537,7 +1537,7 @@ CONTAINS
       ic_corr_list_beta => mp2_env%ri_g0w0%ic_corr_list_beta
       do_kpoints_cubic_RPA = mp2_env%ri_rpa_im_time%do_im_time_kpoints
       do_kpoints_from_Gamma = SUM(mp2_env%ri_rpa_im_time%kp_grid) > 0
-      do_gw_im_time_clenshaw = mp2_env%ri_g0w0%num_omega_points_im_time > 0
+      do_gw_im_time_clenshaw = mp2_env%ri_g0w0%num_omega_points_im_time > num_integ_points
 
       ! For SOS-MP2 only gemm is implemented
       mm_style = wfc_mm_style_gemm
@@ -1612,11 +1612,13 @@ CONTAINS
                                 row_blk_size=prim_blk_sizes)
 
             gw_corr_lev_tot = gw_corr_lev_occ+gw_corr_lev_virt
+            num_points_W = MAX(mp2_env%ri_g0w0%num_omega_points_im_time, num_integ_points)
 
             IF (.NOT. do_kpoints_cubic_RPA) THEN
                IF (my_open_shell) THEN
                   CALL allocate_matrices_gw_im_time(cut_RI, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, homo, nmo, &
-                                                   num_integ_points, unit_nr, my_group_L_sizes_im_time, my_group_L_starts_im_time, &
+                                                    num_integ_points, num_points_W, unit_nr, &
+                                                    my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                                     row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                                     para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
                                                     mo_coeff, mat_dm_virt_local, mat_3c_overl_int_gw, &
@@ -1628,7 +1630,8 @@ CONTAINS
                                                     mat_3c_overl_nnP_ic_reflected_beta)
                ELSE
                   CALL allocate_matrices_gw_im_time(cut_RI, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, homo, nmo, &
-                                                   num_integ_points, unit_nr, my_group_L_sizes_im_time, my_group_L_starts_im_time, &
+                                                    num_integ_points, num_points_W, unit_nr, &
+                                                    my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                                     row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                                     para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
                                                     mo_coeff, mat_dm_virt_local, mat_3c_overl_int_gw, &
