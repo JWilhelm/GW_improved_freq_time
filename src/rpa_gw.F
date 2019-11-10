@@ -160,10 +160,10 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw, &
                                                             mat_3c_overl_nnP_ic, &
                                                             mat_3c_overl_nnP_ic_reflected, &
-                                                            matrix_s, mat_W
+                                                            matrix_s
       TYPE(dbcsr_p_type), DIMENSION(:, :, :), POINTER    :: mat_3c_overl_int
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
-                                                            mat_contr_W
+                                                            mat_contr_W, mat_W
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN), OPTIONAL                      :: gw_corr_lev_occ_beta, &
                                                             gw_corr_lev_virt_beta, homo_beta
@@ -312,16 +312,26 @@ CONTAINS
       CALL dbcsr_create(matrix=mat_contr_W, &
                         template=mat_3c_overl_int_gw(1)%matrix)
 
+! JW 2del
+!      NULLIFY (mat_W)
+!      ALLOCATE (mat_W(num_integ_points))
+!      DO jquad = 1, num_integ_points
+!         ALLOCATE (mat_W(jquad)%matrix)
+!         CALL dbcsr_create(matrix=mat_W(jquad)%matrix, &
+!                           template=mat_3c_overl_int_gw(1)%matrix, &
+!                           matrix_type=dbcsr_type_no_symmetry, &
+!                           row_blk_size=RI_blk_sizes, &
+!                           col_blk_size=RI_blk_sizes)
+!      END DO
+
       NULLIFY (mat_W)
-      ALLOCATE (mat_W(num_integ_points))
-      DO jquad = 1, num_integ_points
-         ALLOCATE (mat_W(jquad)%matrix)
-         CALL dbcsr_create(matrix=mat_W(jquad)%matrix, &
+      CALL dbcsr_init_p(mat_W)
+      CALL dbcsr_create(matrix=mat_W, &
                            template=mat_3c_overl_int_gw(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry, &
                            row_blk_size=RI_blk_sizes, &
                            col_blk_size=RI_blk_sizes)
-      END DO
+
 
       CALL timestop(handle)
 
@@ -851,10 +861,10 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_ic_model, do_kpoints_cubic_RPA
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER :: mat_3c_overl_int_gw, mat_greens_fct_occ, &
-         mat_greens_fct_virt, mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, mat_W
+         mat_greens_fct_virt, mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected
       TYPE(dbcsr_p_type), DIMENSION(:, :, :), POINTER    :: mat_3c_overl_int
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
-                                                            mat_contr_W
+                                                            mat_contr_W, mat_W
       INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(IN)     :: ikp_local
       TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: cfm_mat_W_kp_tau
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, POINTER :: mat_3c_overl_int_gw_beta, &
@@ -902,7 +912,8 @@ CONTAINS
          CALL dbcsr_release_P(mat_contr_gf_occ)
          CALL dbcsr_release_P(mat_contr_gf_virt)
          CALL dbcsr_release_P(mat_contr_W)
-         CALL dbcsr_deallocate_matrix_set(mat_W)
+!JW 2del         CALL dbcsr_deallocate_matrix_set(mat_W)
+         CALL dbcsr_release_P(mat_W)
 
          IF (do_ic_model) THEN
             CALL dbcsr_deallocate_matrix_set(mat_3c_overl_nnP_ic)
@@ -1421,9 +1432,9 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env, para_env_RPA
       TYPE(dbcsr_p_type), INTENT(IN)                     :: mat_dm, mat_SinvVSinv
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER :: mat_3c_overl_int_gw, matrix_berry_im_mo_mo, &
-         matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s
+         matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, matrix_s
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
-                                                            mat_contr_W
+                                                            mat_contr_W, mat_W
       TYPE(kpoint_type), POINTER                         :: kpoints
       TYPE(mp2_type), POINTER                            :: mp2_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
@@ -4789,8 +4800,7 @@ CONTAINS
                                                             gw_corr_lev_virt, homo, count_ev_sc_GW
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
-                                                            mat_contr_W
-      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_W
+                                                            mat_contr_W, mat_W
       TYPE(dbcsr_p_type)                                 :: mat_SinvVSinv, mat_dm
       REAL(KIND=dp), INTENT(IN)                          :: stabilize_exp
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
@@ -4889,14 +4899,16 @@ CONTAINS
                                          fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                          fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
                                          eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, do_freq=.FALSE., do_time=.TRUE.)
+
+            CALL dbcsr_set(mat_W, 0.0_dp)
    
-            CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W(jquad)%matrix, keep_sparsity=.FALSE.)
+            CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
    
             DO n_level_gw = 1, gw_corr_lev_tot
    
                IF (.NOT. do_GW_corr(n_level_gw)) CYCLE
    
-               CALL dbcsr_cubic_GW(n_level_gw, mat_W(jquad)%matrix, &
+               CALL dbcsr_cubic_GW(n_level_gw, mat_W, &
                                    mat_greens_fct_occ(jquad)%matrix, mat_greens_fct_virt(jquad)%matrix, &
                                    mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                    vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
@@ -4911,10 +4923,11 @@ CONTAINS
                                                                    vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
    
             END DO ! n_levl_gw
-   
-            CALL dbcsr_set(mat_W(jquad)%matrix, 0.0_dp)
-   
-            CALL dbcsr_filter(mat_W(jquad)%matrix, 1.0_dp)
+
+!JW 2del   
+!            CALL dbcsr_set(mat_W(jquad)%matrix, 0.0_dp)
+!   
+!            CALL dbcsr_filter(mat_W(jquad)%matrix, 1.0_dp)
    
          END DO ! jquad (tau)
 
