@@ -113,7 +113,7 @@ CONTAINS
 !> \param para_env_sub ...
 !> \param fm_mat_W ...
 !> \param fm_mat_Q ...
-!> \param mo_coeff ...
+!> \param fm_mo_coeff ...
 !> \param mat_dm_virt_local ...
 !> \param mat_3c_overl_int_gw ...
 !> \param mat_3c_overl_nnP_ic ...
@@ -128,7 +128,7 @@ CONTAINS
 !> \param gw_corr_lev_occ_beta ...
 !> \param gw_corr_lev_virt_beta ...
 !> \param homo_beta ...
-!> \param mo_coeff_beta ...
+!> \param fm_mo_coeff_beta ...
 !> \param mat_3c_overl_int_gw_beta ...
 !> \param mat_3c_overl_nnP_ic_beta ...
 !> \param mat_3c_overl_nnP_ic_reflected_beta ...
@@ -138,12 +138,12 @@ CONTAINS
                                            my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                            row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                            para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
-                                           mo_coeff, mat_dm_virt_local, mat_3c_overl_int_gw, &
+                                           fm_mo_coeff, mat_dm_virt_local, mat_3c_overl_int_gw, &
                                            mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, &
                                            matrix_s, mat_W, mat_3c_overl_int, mat_contr_gf_occ, mat_contr_gf_virt, &
                                            mat_contr_W, qs_env, &
                                            gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
-                                           mo_coeff_beta, mat_3c_overl_int_gw_beta, mat_3c_overl_nnP_ic_beta, &
+                                           fm_mo_coeff_beta, mat_3c_overl_int_gw_beta, mat_3c_overl_nnP_ic_beta, &
                                            mat_3c_overl_nnP_ic_reflected_beta)
 
       INTEGER, INTENT(IN)                                :: cut_RI, gw_corr_lev_occ, &
@@ -155,7 +155,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_ic_model, do_ic_opt_homo_lumo
       TYPE(cp_para_env_type), POINTER                    :: para_env, para_env_sub
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
-      TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, mo_coeff
+      TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mo_coeff
       TYPE(dbcsr_p_type), INTENT(IN)                     :: mat_dm_virt_local
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw, &
                                                             mat_3c_overl_nnP_ic, &
@@ -167,7 +167,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN), OPTIONAL                      :: gw_corr_lev_occ_beta, &
                                                             gw_corr_lev_virt_beta, homo_beta
-      TYPE(cp_fm_type), OPTIONAL, POINTER                :: mo_coeff_beta
+      TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mo_coeff_beta
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, POINTER :: mat_3c_overl_int_gw_beta, &
          mat_3c_overl_nnP_ic_beta, mat_3c_overl_nnP_ic_reflected_beta
 
@@ -181,7 +181,7 @@ CONTAINS
 
       my_open_shell = .FALSE.
       IF (PRESENT(gw_corr_lev_occ_beta) .AND. PRESENT(gw_corr_lev_virt_beta) .AND. PRESENT(homo_beta) .AND. &
-          PRESENT(mo_coeff_beta) .AND. PRESENT(mat_3c_overl_int_gw_beta) .AND. PRESENT(mat_3c_overl_nnP_ic_beta) &
+          PRESENT(fm_mo_coeff_beta) .AND. PRESENT(mat_3c_overl_int_gw_beta) .AND. PRESENT(mat_3c_overl_nnP_ic_beta) &
           .AND. PRESENT(mat_3c_overl_nnP_ic_reflected_beta)) THEN
          my_open_shell = .TRUE.
       END IF
@@ -227,7 +227,7 @@ CONTAINS
 
       END DO
 
-      CALL get_mat_3c_overl_int_gw(mat_3c_overl_int, mat_3c_overl_int_gw, mo_coeff, matrix_s, &
+      CALL get_mat_3c_overl_int_gw(mat_3c_overl_int, mat_3c_overl_int_gw, fm_mo_coeff, matrix_s, &
                                    gw_corr_lev_occ, gw_corr_lev_virt, homo, nmo, mat_dm_virt_local, &
                                    para_env, para_env_sub, cut_RI, row_from_LLL, &
                                    my_group_L_starts_im_time, my_group_L_sizes_im_time, do_ic_model, &
@@ -276,7 +276,7 @@ CONTAINS
 
          END DO
 
-         CALL get_mat_3c_overl_int_gw(mat_3c_overl_int, mat_3c_overl_int_gw_beta, mo_coeff_beta, matrix_s, &
+         CALL get_mat_3c_overl_int_gw(mat_3c_overl_int, mat_3c_overl_int_gw_beta, fm_mo_coeff_beta, matrix_s, &
                                       gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, nmo, mat_dm_virt_local, &
                                       para_env, para_env_sub, cut_RI, row_from_LLL, &
                                       my_group_L_starts_im_time, my_group_L_sizes_im_time, do_ic_model, &
@@ -964,7 +964,7 @@ CONTAINS
 !> \param fm_mat_S_gw ...
 !> \param fm_mat_S_gw_work ...
 !> \param fm_mat_work ...
-!> \param mo_coeff ...
+!> \param fm_mo_coeff ...
 !> \param para_env ...
 !> \param para_env_RPA ...
 !> \param matrix_berry_im_mo_mo ...
@@ -989,7 +989,7 @@ CONTAINS
                                    omega, Eigenval, delta_corr, tau_tj, tj, vec_omega_fit_gw, &
                                    vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W, fm_mat_L, &
                                    fm_mat_Q, fm_mat_Q_static_bse, fm_mat_R_gw, fm_mat_S_gw, &
-                                   fm_mat_S_gw_work, fm_mat_work, mo_coeff, para_env, &
+                                   fm_mat_S_gw_work, fm_mat_work, fm_mo_coeff, para_env, &
                                    para_env_RPA, matrix_berry_im_mo_mo, matrix_berry_re_mo_mo, &
                                    kpoints, qs_env, mp2_env, do_kpoints_cubic_RPA, do_kpoints_from_Gamma, &
                                    vec_Sigma_c_gw_beta, gw_corr_lev_occ_beta, homo_beta, Eigenval_beta, &
@@ -1019,7 +1019,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_mat_L
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mat_Q_static_bse, &
                                                             fm_mat_R_gw, fm_mat_S_gw, &
-                                                            fm_mat_S_gw_work, fm_mat_work, mo_coeff
+                                                            fm_mat_S_gw_work, fm_mat_work, fm_mo_coeff
       TYPE(cp_para_env_type), POINTER                    :: para_env, para_env_RPA
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_berry_im_mo_mo, &
                                                             matrix_berry_re_mo_mo
@@ -1075,7 +1075,7 @@ CONTAINS
          IF (do_periodic) THEN
             CALL calc_periodic_correction(delta_corr, qs_env, para_env, para_env_RPA, &
                                           mp2_env%ri_g0w0%kp_grid, homo, nmo, gw_corr_lev_occ, &
-                                          gw_corr_lev_virt, omega, mo_coeff, Eigenval, &
+                                          gw_corr_lev_virt, omega, fm_mo_coeff, Eigenval, &
                                           matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                           first_cycle_periodic_correction, kpoints, &
                                           mp2_env%ri_g0w0%do_mo_coeff_gamma, &
@@ -1329,7 +1329,7 @@ CONTAINS
 !> \param fm_mo_coeff_virt ...
 !> \param fm_scaled_dm_occ_tau ...
 !> \param fm_scaled_dm_virt_tau ...
-!> \param mo_coeff ...
+!> \param fm_mo_coeff ...
 !> \param fm_mat_W ...
 !> \param para_env ...
 !> \param para_env_RPA ...
@@ -1381,7 +1381,7 @@ CONTAINS
                                 weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                 fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
                                 fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
-                                mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
+                                fm_mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
                                 mat_3c_overl_int_gw, matrix_berry_im_mo_mo, &
                                 matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s, &
                                 mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, kpoints, mp2_env, qs_env, &
@@ -1416,7 +1416,7 @@ CONTAINS
          INTENT(IN)                                      :: weights_cos_tf_t_to_w, &
                                                             weights_sin_tf_t_to_w
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-         fm_mo_coeff_occ, fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, mo_coeff
+         fm_mo_coeff_occ, fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, fm_mo_coeff
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
       TYPE(cp_para_env_type), POINTER                    :: para_env, para_env_RPA
       TYPE(dbcsr_p_type), INTENT(IN)                     :: mat_dm, mat_SinvVSinv
@@ -1490,7 +1490,7 @@ CONTAINS
                                              do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                              num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
-                                             first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
+                                             first_cycle_periodic_correction, kpoints, num_fit_points, fm_mo_coeff, &
                                              do_GW_corr, do_ri_Sigma_x, vec_Sigma_x_gw)
 
          IF (my_open_shell) THEN
@@ -1507,7 +1507,7 @@ CONTAINS
                                                 do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                                 num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                                 mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
-                                                first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
+                                                first_cycle_periodic_correction, kpoints, num_fit_points, fm_mo_coeff, &
                                                 do_GW_corr, do_ri_Sigma_x, vec_Sigma_x_gw_beta, do_beta=.TRUE.)
 
          END IF
@@ -1730,7 +1730,7 @@ CONTAINS
 !> \param matrix_berry_im_mo_mo ...
 !> \param first_cycle_periodic_correction ...
 !> \param kpoints ...
-!> \param do_mo_coeff_Gamma_only ...
+!> \param do_fm_mo_coeff_Gamma_only ...
 !> \param num_kp_grids ...
 !> \param eps_kpoint ...
 !> \param do_extra_kpoints ...
@@ -1740,7 +1740,7 @@ CONTAINS
    SUBROUTINE calc_periodic_correction(delta_corr, qs_env, para_env, para_env_RPA, kp_grid, homo, nmo, &
                                        gw_corr_lev_occ, gw_corr_lev_virt, omega, fm_mo_coeff, Eigenval, &
                                        matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
-                                       first_cycle_periodic_correction, kpoints, do_mo_coeff_Gamma_only, &
+                                       first_cycle_periodic_correction, kpoints, do_fm_mo_coeff_Gamma_only, &
                                        num_kp_grids, eps_kpoint, do_extra_kpoints, do_aux_bas, frac_aux_mos)
 
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
@@ -1757,7 +1757,7 @@ CONTAINS
                                                             matrix_berry_im_mo_mo
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
       TYPE(kpoint_type), POINTER                         :: kpoints
-      LOGICAL, INTENT(IN)                                :: do_mo_coeff_Gamma_only
+      LOGICAL, INTENT(IN)                                :: do_fm_mo_coeff_Gamma_only
       INTEGER, INTENT(IN)                                :: num_kp_grids
       REAL(KIND=dp), INTENT(IN)                          :: eps_kpoint
       LOGICAL, INTENT(IN)                                :: do_extra_kpoints, do_aux_bas
@@ -1774,11 +1774,11 @@ CONTAINS
 
       IF (first_cycle_periodic_correction) THEN
 
-         CALL get_kpoints(qs_env, kpoints, kp_grid, num_kp_grids, para_env, h_inv, nmo, do_mo_coeff_Gamma_only, &
+         CALL get_kpoints(qs_env, kpoints, kp_grid, num_kp_grids, para_env, h_inv, nmo, do_fm_mo_coeff_Gamma_only, &
                           do_extra_kpoints)
 
          CALL get_berry_phase(qs_env, kpoints, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, fm_mo_coeff, &
-                              para_env, do_mo_coeff_Gamma_only, homo, nmo, gw_corr_lev_virt, eps_kpoint, do_aux_bas, &
+                              para_env, do_fm_mo_coeff_Gamma_only, homo, nmo, gw_corr_lev_virt, eps_kpoint, do_aux_bas, &
                               frac_aux_mos)
 
       END IF
@@ -1966,7 +1966,7 @@ CONTAINS
 !> \param matrix_berry_im_mo_mo ...
 !> \param fm_mo_coeff ...
 !> \param para_env ...
-!> \param do_mo_coeff_Gamma_only ...
+!> \param do_fm_mo_coeff_Gamma_only ...
 !> \param homo ...
 !> \param nmo ...
 !> \param gw_corr_lev_virt ...
@@ -1975,7 +1975,7 @@ CONTAINS
 !> \param frac_aux_mos ...
 ! **************************************************************************************************
    SUBROUTINE get_berry_phase(qs_env, kpoints, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, fm_mo_coeff, para_env, &
-                              do_mo_coeff_Gamma_only, homo, nmo, gw_corr_lev_virt, eps_kpoint, do_aux_bas, &
+                              do_fm_mo_coeff_Gamma_only, homo, nmo, gw_corr_lev_virt, eps_kpoint, do_aux_bas, &
                               frac_aux_mos)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(kpoint_type), POINTER                         :: kpoints
@@ -1983,7 +1983,7 @@ CONTAINS
                                                             matrix_berry_im_mo_mo
       TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff
       TYPE(cp_para_env_type), POINTER                    :: para_env
-      LOGICAL, INTENT(IN)                                :: do_mo_coeff_Gamma_only
+      LOGICAL, INTENT(IN)                                :: do_fm_mo_coeff_Gamma_only
       INTEGER, INTENT(IN)                                :: homo, nmo, gw_corr_lev_virt
       REAL(KIND=dp), INTENT(IN)                          :: eps_kpoint
       LOGICAL, INTENT(IN)                                :: do_aux_bas
@@ -2005,8 +2005,8 @@ CONTAINS
          fm_mat_s_aux_aux_inv, fm_mat_scaled_eigv_P, fm_mat_work_aux_aux
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s, matrix_s_aux_aux, &
                                                             matrix_s_aux_orb
-      TYPE(dbcsr_type), POINTER :: cosmat, cosmat_desymm, mat_mo_coeff_aux, mat_mo_coeff_aux_2, &
-         mat_mo_coeff_Gamma_all, mat_mo_coeff_Gamma_occ_and_GW, mat_mo_coeff_im, mat_mo_coeff_re, &
+      TYPE(dbcsr_type), POINTER :: cosmat, cosmat_desymm, mat_fm_mo_coeff_aux, mat_fm_mo_coeff_aux_2, &
+         mat_fm_mo_coeff_Gamma_all, mat_fm_mo_coeff_Gamma_occ_and_GW, mat_fm_mo_coeff_im, mat_fm_mo_coeff_re, &
          mat_work_aux_orb, mat_work_aux_orb_2, matrix_P, matrix_P_sqrt, matrix_P_sqrt_inv, &
          matrix_s_inv_aux_aux, sinmat, sinmat_desymm, tmp
       TYPE(gto_basis_set_p_type), DIMENSION(:), POINTER  :: gw_aux_basis_set_list, orb_basis_set_list
@@ -2038,34 +2038,34 @@ CONTAINS
 
       CALL setup_neighbor_list(sab_orb_mic, orb_basis_set_list, qs_env=qs_env, mic=.FALSE.)
 
-      ! create dbcsr matrix of mo_coeff for multiplcation
-      NULLIFY (mat_mo_coeff_re)
-      CALL dbcsr_init_p(mat_mo_coeff_re)
-      CALL dbcsr_create(matrix=mat_mo_coeff_re, &
+      ! create dbcsr matrix of fm_mo_coeff for multiplcation
+      NULLIFY (mat_fm_mo_coeff_re)
+      CALL dbcsr_init_p(mat_fm_mo_coeff_re)
+      CALL dbcsr_create(matrix=mat_fm_mo_coeff_re, &
                         template=matrix_s(1)%matrix, &
                         matrix_type=dbcsr_type_no_symmetry)
 
-      NULLIFY (mat_mo_coeff_im)
-      CALL dbcsr_init_p(mat_mo_coeff_im)
-      CALL dbcsr_create(matrix=mat_mo_coeff_im, &
+      NULLIFY (mat_fm_mo_coeff_im)
+      CALL dbcsr_init_p(mat_fm_mo_coeff_im)
+      CALL dbcsr_create(matrix=mat_fm_mo_coeff_im, &
                         template=matrix_s(1)%matrix, &
                         matrix_type=dbcsr_type_no_symmetry)
 
-      NULLIFY (mat_mo_coeff_Gamma_all)
-      CALL dbcsr_init_p(mat_mo_coeff_Gamma_all)
-      CALL dbcsr_create(matrix=mat_mo_coeff_Gamma_all, &
+      NULLIFY (mat_fm_mo_coeff_Gamma_all)
+      CALL dbcsr_init_p(mat_fm_mo_coeff_Gamma_all)
+      CALL dbcsr_create(matrix=mat_fm_mo_coeff_Gamma_all, &
                         template=matrix_s(1)%matrix, &
                         matrix_type=dbcsr_type_no_symmetry)
 
-      CALL copy_fm_to_dbcsr(fm_mo_coeff, mat_mo_coeff_Gamma_all, keep_sparsity=.FALSE.)
+      CALL copy_fm_to_dbcsr(fm_mo_coeff, mat_fm_mo_coeff_Gamma_all, keep_sparsity=.FALSE.)
 
-      NULLIFY (mat_mo_coeff_Gamma_occ_and_GW)
-      CALL dbcsr_init_p(mat_mo_coeff_Gamma_occ_and_GW)
-      CALL dbcsr_create(matrix=mat_mo_coeff_Gamma_occ_and_GW, &
+      NULLIFY (mat_fm_mo_coeff_Gamma_occ_and_GW)
+      CALL dbcsr_init_p(mat_fm_mo_coeff_Gamma_occ_and_GW)
+      CALL dbcsr_create(matrix=mat_fm_mo_coeff_Gamma_occ_and_GW, &
                         template=matrix_s(1)%matrix, &
                         matrix_type=dbcsr_type_no_symmetry)
 
-      CALL copy_fm_to_dbcsr(fm_mo_coeff, mat_mo_coeff_Gamma_occ_and_GW, keep_sparsity=.FALSE.)
+      CALL copy_fm_to_dbcsr(fm_mo_coeff, mat_fm_mo_coeff_Gamma_occ_and_GW, keep_sparsity=.FALSE.)
 
       IF (.NOT. do_aux_bas) THEN
 
@@ -2153,15 +2153,15 @@ CONTAINS
                            template=matrix_s_aux_orb(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry)
 
-         NULLIFY (mat_mo_coeff_aux)
-         CALL dbcsr_init_p(mat_mo_coeff_aux)
-         CALL dbcsr_create(matrix=mat_mo_coeff_aux, &
+         NULLIFY (mat_fm_mo_coeff_aux)
+         CALL dbcsr_init_p(mat_fm_mo_coeff_aux)
+         CALL dbcsr_create(matrix=mat_fm_mo_coeff_aux, &
                            template=matrix_s_aux_orb(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry)
 
-         NULLIFY (mat_mo_coeff_aux_2)
-         CALL dbcsr_init_p(mat_mo_coeff_aux_2)
-         CALL dbcsr_create(matrix=mat_mo_coeff_aux_2, &
+         NULLIFY (mat_fm_mo_coeff_aux_2)
+         CALL dbcsr_init_p(mat_fm_mo_coeff_aux_2)
+         CALL dbcsr_create(matrix=mat_fm_mo_coeff_aux_2, &
                            template=matrix_s_aux_orb(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry)
 
@@ -2225,13 +2225,13 @@ CONTAINS
          CALL dbcsr_multiply('N', 'N', 1.0_dp, matrix_s_inv_aux_aux, matrix_s_aux_orb(1)%matrix, 0.0_dp, mat_work_aux_orb, &
                              filter_eps=1.0E-15_dp)
 
-         CALL dbcsr_multiply('N', 'N', 1.0_dp, mat_work_aux_orb, mat_mo_coeff_Gamma_all, 0.0_dp, mat_mo_coeff_aux_2, &
+         CALL dbcsr_multiply('N', 'N', 1.0_dp, mat_work_aux_orb, mat_fm_mo_coeff_Gamma_all, 0.0_dp, mat_fm_mo_coeff_aux_2, &
                              last_column=nmo_for_aux_bas, filter_eps=1.0E-15_dp)
 
-         CALL dbcsr_multiply('N', 'N', 1.0_dp, matrix_s_aux_aux(1)%matrix, mat_mo_coeff_aux_2, 0.0_dp, mat_work_aux_orb, &
+         CALL dbcsr_multiply('N', 'N', 1.0_dp, matrix_s_aux_aux(1)%matrix, mat_fm_mo_coeff_aux_2, 0.0_dp, mat_work_aux_orb, &
                              filter_eps=1.0E-15_dp)
 
-         CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_aux_2, mat_work_aux_orb, 0.0_dp, matrix_P, &
+         CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_aux_2, mat_work_aux_orb, 0.0_dp, matrix_P, &
                              filter_eps=1.0E-15_dp)
 
          CALL copy_dbcsr_to_fm(matrix_P, fm_mat_P)
@@ -2264,7 +2264,7 @@ CONTAINS
 
          CALL copy_fm_to_dbcsr(fm_mat_P_sqrt_inv, matrix_P_sqrt_inv, keep_sparsity=.FALSE.)
 
-         CALL dbcsr_multiply('N', 'N', 1.0_dp, mat_mo_coeff_aux_2, matrix_P_sqrt_inv, 0.0_dp, mat_mo_coeff_aux, &
+         CALL dbcsr_multiply('N', 'N', 1.0_dp, mat_fm_mo_coeff_aux_2, matrix_P_sqrt_inv, 0.0_dp, mat_fm_mo_coeff_aux, &
                              filter_eps=1.0E-15_dp)
 
          ! allocate intermediate matrices
@@ -2293,30 +2293,30 @@ CONTAINS
          CALL dbcsr_allocate_matrix_set(matrix_berry_im_mo_mo, nkp)
 
          ! allocate the new MO coefficients in the aux basis
-         CALL dbcsr_release_p(mat_mo_coeff_Gamma_all)
-         CALL dbcsr_release_p(mat_mo_coeff_Gamma_occ_and_GW)
+         CALL dbcsr_release_p(mat_fm_mo_coeff_Gamma_all)
+         CALL dbcsr_release_p(mat_fm_mo_coeff_Gamma_occ_and_GW)
 
-         NULLIFY (mat_mo_coeff_Gamma_all)
-         CALL dbcsr_init_p(mat_mo_coeff_Gamma_all)
-         CALL dbcsr_create(matrix=mat_mo_coeff_Gamma_all, &
+         NULLIFY (mat_fm_mo_coeff_Gamma_all)
+         CALL dbcsr_init_p(mat_fm_mo_coeff_Gamma_all)
+         CALL dbcsr_create(matrix=mat_fm_mo_coeff_Gamma_all, &
                            template=matrix_s_aux_orb(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry)
 
-         CALL dbcsr_copy(mat_mo_coeff_Gamma_all, mat_mo_coeff_aux)
+         CALL dbcsr_copy(mat_fm_mo_coeff_Gamma_all, mat_fm_mo_coeff_aux)
 
-         NULLIFY (mat_mo_coeff_Gamma_occ_and_GW)
-         CALL dbcsr_init_p(mat_mo_coeff_Gamma_occ_and_GW)
-         CALL dbcsr_create(matrix=mat_mo_coeff_Gamma_occ_and_GW, &
+         NULLIFY (mat_fm_mo_coeff_Gamma_occ_and_GW)
+         CALL dbcsr_init_p(mat_fm_mo_coeff_Gamma_occ_and_GW)
+         CALL dbcsr_create(matrix=mat_fm_mo_coeff_Gamma_occ_and_GW, &
                            template=matrix_s_aux_orb(1)%matrix, &
                            matrix_type=dbcsr_type_no_symmetry)
 
-         CALL dbcsr_copy(mat_mo_coeff_Gamma_occ_and_GW, mat_mo_coeff_aux)
+         CALL dbcsr_copy(mat_fm_mo_coeff_Gamma_occ_and_GW, mat_fm_mo_coeff_aux)
 
          DEALLOCATE (evals_P, evals_P_sqrt_inv)
 
       END IF
 
-      CALL remove_unnecessary_blocks(mat_mo_coeff_Gamma_occ_and_GW, homo, gw_corr_lev_virt)
+      CALL remove_unnecessary_blocks(mat_fm_mo_coeff_Gamma_occ_and_GW, homo, gw_corr_lev_virt)
 
       DO ikp = 1, nkp
 
@@ -2356,63 +2356,63 @@ CONTAINS
                                            basis_type="ORB")
          END IF
 
-         IF (do_mo_coeff_Gamma_only) THEN
+         IF (do_fm_mo_coeff_Gamma_only) THEN
 
             CALL dbcsr_desymmetrize(cosmat, cosmat_desymm)
 
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_mo_coeff_Gamma_occ_and_GW, 0.0_dp, tmp, &
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_fm_mo_coeff_Gamma_occ_and_GW, 0.0_dp, tmp, &
                                 filter_eps=1.0E-15_dp)
 
-            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_Gamma_all, tmp, 0.0_dp, &
+            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 0.0_dp, &
                                 matrix_berry_re_mo_mo(ikp)%matrix, filter_eps=1.0E-15_dp)
 
             CALL dbcsr_desymmetrize(sinmat, sinmat_desymm)
 
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_mo_coeff_Gamma_occ_and_GW, 0.0_dp, tmp, &
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_fm_mo_coeff_Gamma_occ_and_GW, 0.0_dp, tmp, &
                                 filter_eps=1.0E-15_dp)
 
-            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_Gamma_all, tmp, 0.0_dp, &
+            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 0.0_dp, &
                                 matrix_berry_im_mo_mo(ikp)%matrix, filter_eps=1.0E-15_dp)
 
          ELSE
 
             ! get mo coeff at the ikp
             CALL copy_fm_to_dbcsr(kpoints%kp_env(ikp)%kpoint_env%mos(1, 1)%mo_set%mo_coeff, &
-                                  mat_mo_coeff_re, keep_sparsity=.FALSE.)
+                                  mat_fm_mo_coeff_re, keep_sparsity=.FALSE.)
 
             CALL copy_fm_to_dbcsr(kpoints%kp_env(ikp)%kpoint_env%mos(2, 1)%mo_set%mo_coeff, &
-                                  mat_mo_coeff_im, keep_sparsity=.FALSE.)
+                                  mat_fm_mo_coeff_im, keep_sparsity=.FALSE.)
 
             CALL dbcsr_desymmetrize(cosmat, cosmat_desymm)
 
             CALL dbcsr_desymmetrize(sinmat, sinmat_desymm)
 
             ! I.
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_mo_coeff_re, 0.0_dp, tmp)
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_fm_mo_coeff_re, 0.0_dp, tmp)
 
             ! I.1
-            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_Gamma_all, tmp, 0.0_dp, &
+            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 0.0_dp, &
                                 matrix_berry_re_mo_mo(ikp)%matrix)
 
             ! II.
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_mo_coeff_re, 0.0_dp, tmp)
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_fm_mo_coeff_re, 0.0_dp, tmp)
 
             ! II.5
-            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_Gamma_all, tmp, 0.0_dp, &
+            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 0.0_dp, &
                                 matrix_berry_im_mo_mo(ikp)%matrix)
 
             ! III.
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_mo_coeff_im, 0.0_dp, tmp)
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, cosmat_desymm, mat_fm_mo_coeff_im, 0.0_dp, tmp)
 
             ! III.7
-            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_mo_coeff_Gamma_all, tmp, 1.0_dp, &
+            CALL dbcsr_multiply('T', 'N', 1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 1.0_dp, &
                                 matrix_berry_im_mo_mo(ikp)%matrix)
 
             ! IV.
-            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_mo_coeff_im, 0.0_dp, tmp)
+            CALL dbcsr_multiply('N', 'N', 1.0_dp, sinmat_desymm, mat_fm_mo_coeff_im, 0.0_dp, tmp)
 
             ! IV.3
-            CALL dbcsr_multiply('T', 'N', -1.0_dp, mat_mo_coeff_Gamma_all, tmp, 1.0_dp, &
+            CALL dbcsr_multiply('T', 'N', -1.0_dp, mat_fm_mo_coeff_Gamma_all, tmp, 1.0_dp, &
                                 matrix_berry_re_mo_mo(ikp)%matrix)
 
          END IF
@@ -2429,10 +2429,10 @@ CONTAINS
 
       CALL dbcsr_release_p(cosmat)
       CALL dbcsr_release_p(sinmat)
-      CALL dbcsr_release_p(mat_mo_coeff_re)
-      CALL dbcsr_release_p(mat_mo_coeff_im)
-      CALL dbcsr_release_p(mat_mo_coeff_Gamma_all)
-      CALL dbcsr_release_p(mat_mo_coeff_Gamma_occ_and_GW)
+      CALL dbcsr_release_p(mat_fm_mo_coeff_re)
+      CALL dbcsr_release_p(mat_fm_mo_coeff_im)
+      CALL dbcsr_release_p(mat_fm_mo_coeff_Gamma_all)
+      CALL dbcsr_release_p(mat_fm_mo_coeff_Gamma_occ_and_GW)
       CALL dbcsr_release_p(tmp)
       CALL dbcsr_release_p(cosmat_desymm)
       CALL dbcsr_release_p(sinmat_desymm)
@@ -2452,8 +2452,8 @@ CONTAINS
          CALL dbcsr_deallocate_matrix_set(matrix_s_aux_orb)
          CALL dbcsr_release_p(mat_work_aux_orb)
          CALL dbcsr_release_p(mat_work_aux_orb_2)
-         CALL dbcsr_release_p(mat_mo_coeff_aux)
-         CALL dbcsr_release_p(mat_mo_coeff_aux_2)
+         CALL dbcsr_release_p(mat_fm_mo_coeff_aux)
+         CALL dbcsr_release_p(mat_fm_mo_coeff_aux_2)
          CALL dbcsr_release_p(matrix_s_inv_aux_aux)
          CALL dbcsr_release_p(matrix_P)
          CALL dbcsr_release_p(matrix_P_sqrt)
@@ -2491,20 +2491,20 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief ...
-!> \param mat_mo_coeff_Gamma_occ_and_GW ...
+!> \param mat_fm_mo_coeff_Gamma_occ_and_GW ...
 !> \param homo ...
 !> \param gw_corr_lev_virt ...
 ! **************************************************************************************************
-   SUBROUTINE remove_unnecessary_blocks(mat_mo_coeff_Gamma_occ_and_GW, homo, gw_corr_lev_virt)
+   SUBROUTINE remove_unnecessary_blocks(mat_fm_mo_coeff_Gamma_occ_and_GW, homo, gw_corr_lev_virt)
 
-      TYPE(dbcsr_type), POINTER                          :: mat_mo_coeff_Gamma_occ_and_GW
+      TYPE(dbcsr_type), POINTER                          :: mat_fm_mo_coeff_Gamma_occ_and_GW
       INTEGER, INTENT(IN)                                :: homo, gw_corr_lev_virt
 
       INTEGER                                            :: col, col_offset, row
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: data_block
       TYPE(dbcsr_iterator_type)                          :: iter
 
-      CALL dbcsr_iterator_start(iter, mat_mo_coeff_Gamma_occ_and_GW)
+      CALL dbcsr_iterator_start(iter, mat_fm_mo_coeff_Gamma_occ_and_GW)
 
       DO WHILE (dbcsr_iterator_blocks_left(iter))
 
@@ -2521,7 +2521,7 @@ CONTAINS
 
       CALL dbcsr_iterator_stop(iter)
 
-      CALL dbcsr_filter(mat_mo_coeff_Gamma_occ_and_GW, 1.0E-15_dp)
+      CALL dbcsr_filter(mat_fm_mo_coeff_Gamma_occ_and_GW, 1.0E-15_dp)
 
    END SUBROUTINE remove_unnecessary_blocks
 
@@ -2765,11 +2765,11 @@ CONTAINS
 !> \param para_env ...
 !> \param h_inv ...
 !> \param nmo ...
-!> \param do_mo_coeff_Gamma_only ...
+!> \param do_fm_mo_coeff_Gamma_only ...
 !> \param do_extra_kpoints ...
 ! **************************************************************************************************
    SUBROUTINE get_kpoints(qs_env, kpoints, kp_grid, num_kp_grids, para_env, h_inv, nmo, &
-                          do_mo_coeff_Gamma_only, do_extra_kpoints)
+                          do_fm_mo_coeff_Gamma_only, do_extra_kpoints)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(kpoint_type), POINTER                         :: kpoints
       INTEGER, DIMENSION(:), POINTER                     :: kp_grid
@@ -2777,7 +2777,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(INOUT)      :: h_inv
       INTEGER, INTENT(IN)                                :: nmo
-      LOGICAL, INTENT(IN)                                :: do_mo_coeff_Gamma_only, do_extra_kpoints
+      LOGICAL, INTENT(IN)                                :: do_fm_mo_coeff_Gamma_only, do_extra_kpoints
 
       INTEGER                                            :: end_kp, i, i_grid_level, ix, iy, iz, &
                                                             nkp_inner_grid, nkp_outer_grid, &
@@ -2794,10 +2794,10 @@ CONTAINS
       ! check whether kp_grid includes the Gamma point. If so, abort.
       CPASSERT(MOD(kp_grid(1)*kp_grid(2)*kp_grid(3), 2) == 0)
       IF (do_extra_kpoints) THEN
-         CPASSERT(do_mo_coeff_Gamma_only)
+         CPASSERT(do_fm_mo_coeff_Gamma_only)
       END IF
 
-      IF (do_mo_coeff_Gamma_only) THEN
+      IF (do_fm_mo_coeff_Gamma_only) THEN
 
          outer_kp_grid(1) = kp_grid(1)-1
          outer_kp_grid(2) = kp_grid(2)-1
@@ -4755,7 +4755,7 @@ CONTAINS
 !> \param first_cycle_periodic_correction ...
 !> \param kpoints ...
 !> \param num_fit_points ...
-!> \param mo_coeff ...
+!> \param fm_mo_coeff ...
 !> \param do_GW_corr ...
 !> \param do_ri_Sigma_x ...
 !> \param vec_Sigma_x_gw ...
@@ -4773,7 +4773,7 @@ CONTAINS
                                              do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                              num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
-                                             first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
+                                             first_cycle_periodic_correction, kpoints, num_fit_points, fm_mo_coeff, &
                                              do_GW_corr, do_ri_Sigma_x, vec_Sigma_x_gw, do_beta)
       INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_points_G_and_W
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
@@ -4810,7 +4810,7 @@ CONTAINS
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
       TYPE(kpoint_type), POINTER                         :: kpoints
       INTEGER, INTENT(IN)                                :: num_fit_points
-      TYPE(cp_fm_type), POINTER                          :: mo_coeff
+      TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff
       LOGICAL, ALLOCATABLE, DIMENSION(:), INTENT(IN)     :: do_GW_corr
       LOGICAL, INTENT(IN)                                :: do_ri_Sigma_x
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
@@ -4828,7 +4828,7 @@ CONTAINS
       LOGICAL                                            :: my_do_beta
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
-                                                            weight_cos, weight_i, weight_sin
+                                                            weight_cos, weight_i, weight_sin, omega_j
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
          vec_Sigma_c_gw_sin_omega, vec_Sigma_c_gw_sin_tau
@@ -4866,6 +4866,12 @@ CONTAINS
 
             DO iquad = 1, num_fit_points
 
+               ! compute Green's function for i*(omega-omega') and store  fm_scaled_dm_occ_tau and fm_scaled_dm_virt_tau
+               CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff, fm_mo_coeff, &
+                                            fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
+                                            fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
+                                            eps_filter, e_fermi, stabilize_exp, omega_i-omega_j, count_ev_sc_GW, &
+                                            do_freq=.TRUE., do_time=.FALSE.)
 
 
 
@@ -4882,7 +4888,7 @@ CONTAINS
             CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                          fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                          fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                         eps_filter, e_fermi, stabilize_exp, tau_tj, count_ev_sc_GW)
+                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, do_freq=.FALSE., do_time=.TRUE.)
    
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W(jquad)%matrix, keep_sparsity=.FALSE.)
    
@@ -5029,7 +5035,7 @@ CONTAINS
 
             CALL calc_periodic_correction(delta_corr, qs_env, para_env, para_env_RPA, &
                                           mp2_env%ri_g0w0%kp_grid, homo, nmo, gw_corr_lev_occ, &
-                                          gw_corr_lev_virt, omega_i, mo_coeff, Eigenval, &
+                                          gw_corr_lev_virt, omega_i, fm_mo_coeff, Eigenval, &
                                           matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                           first_cycle_periodic_correction, kpoints, &
                                           mp2_env%ri_g0w0%do_mo_coeff_gamma, &
@@ -5181,7 +5187,7 @@ CONTAINS
    SUBROUTINE compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                       fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                      eps_filter, e_fermi, stabilize_exp, tau_tj, count_ev_sc_GW)
+                                      eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, do_freq, do_time)
 
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt, &
                                                             matrix_s
@@ -5190,9 +5196,10 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
       INTEGER, INTENT(IN)                                :: jquad, num_integ_points, nmo
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, stabilize_exp
-      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(IN)                                      :: tau_tj
+      REAL(KIND=dp), &
+         INTENT(IN)                                      :: tau
       INTEGER, INTENT(IN)                                :: count_ev_sc_GW
+      LOGICAL, INTENT(IN) :: do_freq, do_time
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function', &
          routineP = moduleN//':'//routineN
@@ -5200,9 +5207,11 @@ CONTAINS
       INTEGER                                            :: handle, i_global, iiB, iquad, jjB, &
                                                             ncol_local, nrow_local
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
-      REAL(KIND=dp)                                      :: tau
 
       CALL timeset(routineN, handle)
+
+      ! either do time or frequency
+      CPASSERT(do_freq .NEQV. do_time)
 
       ! release memory
       IF (jquad > 1) THEN
@@ -5211,8 +5220,6 @@ CONTAINS
          CALL dbcsr_filter(mat_greens_fct_occ(jquad-1)%matrix, 0.0_dp)
          CALL dbcsr_filter(mat_greens_fct_virt(jquad-1)%matrix, 0.0_dp)
       END IF
-
-      tau = tau_tj(jquad)
 
       ! get info of fm_mo_coeff_occ
       CALL cp_fm_get_info(matrix=fm_mo_coeff_occ, &
