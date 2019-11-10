@@ -1496,8 +1496,7 @@ CONTAINS
                                                             mat_SinvVSinv
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER :: mat_3c_overl_int_gw, mat_3c_overl_int_gw_beta, &
          mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_beta, mat_3c_overl_nnP_ic_reflected, &
-         mat_3c_overl_nnP_ic_reflected_beta, mat_greens_fct_occ, mat_greens_fct_occ_beta, &
-         mat_greens_fct_virt, mat_greens_fct_virt_beta, mat_M_mu_Pnu_occ, mat_M_mu_Pnu_virt, &
+         mat_3c_overl_nnP_ic_reflected_beta, mat_M_mu_Pnu_occ, mat_M_mu_Pnu_virt, &
          matrix_berry_im_mo_mo, matrix_berry_re_mo_mo
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: mat_P_omega, mat_P_omega_beta, &
                                                             mat_P_omega_kp
@@ -1506,7 +1505,9 @@ CONTAINS
          mat_3c_overl_int_mao_for_occ_cut, mat_3c_overl_int_mao_for_virt_cut
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
                                                             mat_contr_W, mat_dm_loc_occ, &
-                                                            mat_dm_loc_virt, mat_work, mat_W
+                                                            mat_dm_loc_virt, mat_work, mat_W, &
+                                                 mat_greens_fct_occ, mat_greens_fct_occ_beta, &
+         mat_greens_fct_virt, mat_greens_fct_virt_beta
       TYPE(integ_mat_buffer_type), ALLOCATABLE, &
          DIMENSION(:)                                    :: buffer_rec, buffer_rec_axk, &
                                                             buffer_rec_beta, buffer_send, &
