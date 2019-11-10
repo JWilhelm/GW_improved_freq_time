@@ -1376,7 +1376,7 @@ CONTAINS
                                 nmo, num_fit_points, num_integ_points, &
                                 unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                 do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
-                                do_GW_corr, e_fermi, eps_filter, &
+                                do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
                                 fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
                                 Eigenval_last, Eigenval_scf, tau_tj, tj, &
                                 vec_omega_fit_gw, vec_Sigma_x_gw, ic_corr_list, &
@@ -1400,7 +1400,7 @@ CONTAINS
       INTEGER                                            :: num_points_corr
       INTEGER, INTENT(IN)                                :: unit_nr
       LOGICAL, INTENT(IN)                                :: do_apply_ic_corr_to_gw, do_im_time, &
-                                                            do_periodic, do_ri_Sigma_x
+                                                            do_periodic, do_ri_Sigma_x, do_gw_im_time_mix_minimax_clenshaw
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
       LOGICAL, ALLOCATABLE, DIMENSION(:), INTENT(INOUT)  :: do_GW_corr
       REAL(KIND=dp), INTENT(IN)                          :: e_fermi, eps_filter, fermi_level_offset, &
@@ -1487,7 +1487,8 @@ CONTAINS
                                              gw_corr_lev_tot, gw_corr_lev_occ, gw_corr_lev_virt, homo, count_ev_sc_GW, &
                                              mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, &
                                              mat_contr_W, mat_W, mat_SinvVSinv, mat_dm, stabilize_exp, &
-                                             weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw, do_periodic, &
+                                             weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw, &
+                                             do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                              num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                              first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
@@ -1503,7 +1504,8 @@ CONTAINS
                                                 gw_corr_lev_tot, gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
                                                 count_ev_sc_GW, mat_3c_overl_int_gw_beta, mat_contr_gf_occ, mat_contr_gf_virt, &
                                                 mat_contr_W, mat_W, mat_SinvVSinv, mat_dm, stabilize_exp, &
-                                                weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw_beta, do_periodic, &
+                                                weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw_beta, &
+                                                do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                                 num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                                 mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                                 first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
@@ -4766,7 +4768,8 @@ CONTAINS
                                              gw_corr_lev_tot, gw_corr_lev_occ, gw_corr_lev_virt, homo, count_ev_sc_GW, &
                                              mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                              mat_W, mat_SinvVSinv, mat_dm, stabilize_exp, &
-                                             weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw, do_periodic, &
+                                             weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, vec_Sigma_c_gw, &
+                                             do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                              num_points_corr, delta_corr, qs_env, para_env, para_env_RPA, &
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                              first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
@@ -4794,7 +4797,7 @@ CONTAINS
                                                             weights_sin_tf_t_to_w
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(INOUT)               :: vec_Sigma_c_gw
-      LOGICAL, INTENT(IN)                                :: do_periodic
+      LOGICAL, INTENT(IN)                                :: do_periodic, do_gw_im_time_mix_minimax_clenshaw
       INTEGER, INTENT(IN)                                :: num_points_corr
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(INOUT)                                   :: delta_corr
