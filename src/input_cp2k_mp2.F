@@ -969,7 +969,7 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="NUM_OMEGA_POINTS_IM_TIME", &
+      CALL keyword_create(keyword, __LOCATION__, name="NUM_FREQ_POINTS_G_AND_W", &
                           description="If this number is larger than NUM_INTEG_POINTS, then use a Clenshaw-Curtis grid "// &
                           "for the frequency in low-scaling (imag. time) GW calculations. Putting more Clenshaw-Curtis "// &
                           "points than minimax points is computationally more expensive, but doesn't affect the "// &

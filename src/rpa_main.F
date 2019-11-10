@@ -1448,7 +1448,7 @@ CONTAINS
          handle3, iter_ev_sc, jquad, max_iter_bse, mm_style, my_num_dgemm_call, n_group_col, &
          n_group_row, nkp, nkp_self_energy, nmo, num_3c_repl, num_cells_dm, num_fit_points, &
          num_points_corr, num_Z_vectors, number_of_rec, number_of_rec_axk, number_of_rec_beta, &
-         number_of_send, number_of_send_axk, number_of_send_beta, size_P,num_points_W
+         number_of_send, number_of_send_axk, number_of_send_beta, size_P,num_points_G_and_W
       INTEGER, ALLOCATABLE, DIMENSION(:) :: ikp_local, map_rec_size, map_rec_size_axk, &
          map_rec_size_beta, map_send_size, map_send_size_axk, map_send_size_beta, &
          mepos_P_from_RI_row, my_group_L_sizes_im_time, my_group_L_starts_im_time, row_from_LLL, &
@@ -1465,7 +1465,7 @@ CONTAINS
          starts_array_cm, starts_array_cm_mao_occ, starts_array_cm_mao_virt
       LOGICAL :: do_apply_ic_corr_to_gw, do_gw_im_time, do_ic_model, do_ic_opt_homo_lumo, &
          do_kpoints_cubic_RPA, do_kpoints_from_Gamma, do_periodic, do_ri_Sigma_x, first_cycle, &
-         first_cycle_periodic_correction, my_open_shell, print_ic_values, do_gw_im_time_clenshaw
+         first_cycle_periodic_correction, my_open_shell, print_ic_values, do_gw_im_time_mix_minimax_clenshaw
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: do_GW_corr
       LOGICAL, ALLOCATABLE, DIMENSION(:, :, :)           :: cycle_due_to_sparse_dm, &
                                                             multiply_needed_occ, &
@@ -1537,7 +1537,7 @@ CONTAINS
       ic_corr_list_beta => mp2_env%ri_g0w0%ic_corr_list_beta
       do_kpoints_cubic_RPA = mp2_env%ri_rpa_im_time%do_im_time_kpoints
       do_kpoints_from_Gamma = SUM(mp2_env%ri_rpa_im_time%kp_grid) > 0
-      do_gw_im_time_clenshaw = mp2_env%ri_g0w0%num_omega_points_im_time > num_integ_points
+      do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%num_points_G_and_W > num_integ_points
 
       ! For SOS-MP2 only gemm is implemented
       mm_style = wfc_mm_style_gemm
@@ -1567,7 +1567,7 @@ CONTAINS
          CPASSERT(.NOT. do_periodic)
       END IF
 
-      IF (do_gw_im_time_clenshaw) THEN
+      IF (do_gw_im_time_mix_minimax_clenshaw) THEN
          ! Clenshaw-Curtis frequency grid instead of minimax frequency grid only for N^3 GW
          CPASSERT(do_gw_im_time)
       END IF
@@ -1612,12 +1612,12 @@ CONTAINS
                                 row_blk_size=prim_blk_sizes)
 
             gw_corr_lev_tot = gw_corr_lev_occ+gw_corr_lev_virt
-            num_points_W = MAX(mp2_env%ri_g0w0%num_omega_points_im_time, num_integ_points)
+            num_points_G_and_W = MAX(mp2_env%ri_g0w0%num_points_G_and_W, num_integ_points)
 
             IF (.NOT. do_kpoints_cubic_RPA) THEN
                IF (my_open_shell) THEN
                   CALL allocate_matrices_gw_im_time(cut_RI, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, homo, nmo, &
-                                                    num_integ_points, num_points_W, unit_nr, &
+                                                    num_integ_points, num_points_G_and_W, unit_nr, &
                                                     my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                                     row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                                     para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
@@ -1630,7 +1630,7 @@ CONTAINS
                                                     mat_3c_overl_nnP_ic_reflected_beta)
                ELSE
                   CALL allocate_matrices_gw_im_time(cut_RI, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, homo, nmo, &
-                                                    num_integ_points, num_points_W, unit_nr, &
+                                                    num_integ_points, num_points_G_and_W, unit_nr, &
                                                     my_group_L_sizes_im_time, my_group_L_starts_im_time, &
                                                     row_from_LLL, prim_blk_sizes, RI_blk_sizes, do_ic_model, do_ic_opt_homo_lumo, &
                                                     para_env, para_env_sub, fm_mat_W, fm_mat_Q, &
@@ -1653,17 +1653,14 @@ CONTAINS
 
       END IF
 
-      IF(do_gw_im_time_clenshaw) THEN
-
-         CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_points_W, &
+      IF(do_gw_im_time_mix_minimax_clenshaw) THEN
+         CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_points_G_and_W, &
                                 num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, ext_scaling, a_scaling, tj, wj)
-
-         CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_points_W, do_im_time, &
+         CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_points_G_and_W, do_im_time, &
                                do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
                                do_kpoints_cubic_RPA, a_scaling, e_fermi, tj, wj, mp2_env, &
                                weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
                                do_mixed_minimax_clenshaw=.TRUE.)
-
       ELSE IF (do_minimax_quad .OR. do_ri_sos_laplace_mp2) THEN
          IF (my_open_shell) THEN
             CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_integ_points, do_im_time, &
@@ -2027,7 +2024,7 @@ CONTAINS
                IF (my_open_shell) THEN
                   CALL GW_matrix_operations(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI_red, gw_corr_lev_occ, &
                                             gw_corr_lev_virt, homo, jquad, nmo, num_fit_points, num_integ_points, &
-                                            do_bse, do_im_time, do_periodic, &
+                                            do_bse, do_im_time, do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                             first_cycle_periodic_correction, fermi_level_offset, &
                                             omega, Eigenval, delta_corr, tau_tj, tj, vec_omega_fit_gw, &
                                             vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W, fm_mat_L, &
@@ -2040,7 +2037,7 @@ CONTAINS
                ELSE
                   CALL GW_matrix_operations(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI_red, gw_corr_lev_occ, &
                                             gw_corr_lev_virt, homo, jquad, nmo, num_fit_points, num_integ_points, &
-                                            do_bse, do_im_time, do_periodic, &
+                                            do_bse, do_im_time, do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                             first_cycle_periodic_correction, fermi_level_offset, &
                                             omega, Eigenval, delta_corr, tau_tj, tj, vec_omega_fit_gw, &
                                             vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W, fm_mat_L, &
