@@ -4868,64 +4868,19 @@ CONTAINS
 
             IF (.NOT. do_GW_corr(n_level_gw)) CYCLE
 
-            ! the following formulas are partially taken from Liu et al. PRB 94, 165109 (2016), Eq. (63) - (69)
-
-            CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
-
-            ! the occ Gf has no minus, but already include the minus from Sigma = -GW
-            CALL dbcsr_multiply("N", "N", -1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                mat_greens_fct_occ(jquad)%matrix, &
-                                0.0_dp, mat_contr_gf_occ)
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_2", handle3)
-
-            ! the virt Gf has a minus, but already include the minus from Sigma = -GW
-            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                mat_greens_fct_virt(jquad)%matrix, &
-                                0.0_dp, mat_contr_gf_virt)
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
-
-            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W(jquad)%matrix, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                0.0_dp, mat_contr_W)
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_4", handle3)
-
-            CALL dbcsr_dot(mat_contr_gf_virt, &
-                           mat_contr_W, &
-                           vec_Sigma_c_gw_pos_tau(n_level_gw, jquad))
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_5", handle3)
-
-            CALL dbcsr_dot(mat_contr_gf_occ, &
-                           mat_contr_W, &
-                           vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_5", handle3)
+            CALL dbcsr_cubic_GW(n_level_gw, mat_W(jquad)%matrix, &
+                                mat_greens_fct_occ(jquad)%matrix, mat_greens_fct_virt(jquad)%matrix, &
+                                mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
+                                vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
+                                vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
 
             n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
-
-            CALL timestop(handle3)
-
-            CALL timeset(routineN//"_cubic_GW_operation_7", handle3)
 
             vec_Sigma_c_gw_cos_tau(n_level_gw, jquad) = 0.5_dp*(vec_Sigma_c_gw_pos_tau(n_level_gw, jquad)+ &
                                                                 vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
 
             vec_Sigma_c_gw_sin_tau(n_level_gw, jquad) = 0.5_dp*(vec_Sigma_c_gw_pos_tau(n_level_gw, jquad)- &
                                                                 vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
-
-            CALL timestop(handle3)
 
          END DO ! n_levl_gw
 
@@ -5102,6 +5057,79 @@ CONTAINS
       CALL timestop(handle)
 
    END SUBROUTINE compute_self_energy_im_time_gw
+
+   SUBROUTINE  dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
+                                mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
+                                vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau)
+
+      INTEGER, INTENT(IN)                                :: n_level_gw
+      TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt, &
+                                                            matrix_s
+      TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
+                                                            mat_contr_W, mat_W
+      TYPE(dbcsr_p_type)                                 :: mat_SinvVSinv, mat_dm
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw
+      REAL(KIND=dp), INTENT(INOUT) :: vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_cubic_GW', &
+         routineP = moduleN//':'//routineN
+
+      COMPLEX(KIND=dp)                                   :: im_unit
+      COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
+      INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
+                                                            handle3, iquad, jquad, &
+                                                            n_level_gw_ref
+      LOGICAL                                            :: my_do_beta
+      REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
+                                                            sign_occ_virt, t_i_Clenshaw, tau, &
+                                                            weight_cos, weight_i, weight_sin
+
+      CALL timeset(routineN, handle)
+
+            ! the following formulas are partially taken from Liu et al. PRB 94, 165109 (2016), Eq. (63) - (69)
+
+            CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
+
+            ! the occ Gf has no minus, but already include the minus from Sigma = -GW
+            CALL dbcsr_multiply("N", "N", -1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                                mat_greens_fct_occ, 0.0_dp, mat_contr_gf_occ)
+
+            CALL timestop(handle3)
+
+            CALL timeset(routineN//"_cubic_GW_operation_2", handle3)
+
+            ! the virt Gf has a minus, but already include the minus from Sigma = -GW
+            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                                mat_greens_fct_virt, 0.0_dp, mat_contr_gf_virt)
+
+            CALL timestop(handle3)
+
+            CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
+
+            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                                0.0_dp, mat_contr_W)
+
+            CALL timestop(handle3)
+
+            CALL timeset(routineN//"_cubic_GW_operation_4", handle3)
+
+            CALL dbcsr_dot(mat_contr_gf_virt, &
+                           mat_contr_W, &
+                           vec_Sigma_c_gw_pos_tau)
+
+            CALL timestop(handle3)
+
+            CALL timeset(routineN//"_cubic_GW_operation_5", handle3)
+
+            CALL dbcsr_dot(mat_contr_gf_occ, &
+                           mat_contr_W, &
+                           vec_Sigma_c_gw_neg_tau)
+
+            CALL timestop(handle3)
+
+      CALL timestop(handle)
+
+  END SUBROUTINE dbcsr_cubic_GW
 
 ! **************************************************************************************************
 !> \brief ...
