@@ -5184,7 +5184,7 @@ CONTAINS
    SUBROUTINE compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                       fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                      eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, do_freq, do_time)
+                                      eps_filter, e_fermi, stabilize_exp, tau_or_omega, count_ev_sc_GW, do_freq, do_time)
 
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  matrix_s
       TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt
@@ -5194,7 +5194,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: jquad, num_integ_points, nmo
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, stabilize_exp
       REAL(KIND=dp), &
-         INTENT(IN)                                      :: tau
+         INTENT(IN)                                      :: tau_or_omega
       INTEGER, INTENT(IN)                                :: count_ev_sc_GW
       LOGICAL, INTENT(IN) :: do_freq, do_time
 
@@ -5226,9 +5226,9 @@ CONTAINS
          DO iiB = 1, ncol_local
             i_global = col_indices(iiB)
 
-            IF (ABS(tau*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
+            IF (ABS(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
                fm_mo_coeff_occ_scaled%local_data(jjB, iiB) = &
-                  fm_mo_coeff_occ%local_data(jjB, iiB)*EXP(tau*0.5_dp*(Eigenval(i_global)-e_fermi))
+                  fm_mo_coeff_occ%local_data(jjB, iiB)*EXP(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi))
             ELSE
                fm_mo_coeff_occ_scaled%local_data(jjB, iiB) = 0.0_dp
             END IF
@@ -5241,9 +5241,9 @@ CONTAINS
          DO iiB = 1, ncol_local
             i_global = col_indices(iiB)
 
-            IF (ABS(tau*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
+            IF (ABS(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
                fm_mo_coeff_virt_scaled%local_data(jjB, iiB) = &
-                  fm_mo_coeff_virt%local_data(jjB, iiB)*EXP(-tau*0.5_dp*(Eigenval(i_global)-e_fermi))
+                  fm_mo_coeff_virt%local_data(jjB, iiB)*EXP(-tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi))
             ELSE
                fm_mo_coeff_virt_scaled%local_data(jjB, iiB) = 0.0_dp
             END IF
