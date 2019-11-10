@@ -469,15 +469,11 @@ CONTAINS
       ! determine number of fit points in the interval [0,w_max] for virt, or [-w_max,0] for occ
       num_fit_points = 0
 
-      PRINT *, 'vec_omega_gw =', vec_omega_gw
-
       DO jquad = 1, num_points_G_and_W
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             num_fit_points = num_fit_points+1
          END IF
       END DO
-
-      PRINT *, 'num_fit_points =', num_fit_points
 
       IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
          IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
@@ -1143,8 +1139,6 @@ CONTAINS
 
          IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
-            PRINT *, 'jquad in computing W(iomega) =', jquad
-
             CALL cp_fm_to_fm(fm_mat_Q, fm_mat_W(jquad)%matrix)
 
          ELSE
@@ -1600,8 +1594,6 @@ CONTAINS
                                                num_fit_points, max_iter_fit, crossing_search, homo, check_fit, stop_crit, &
                                                fermi_level_offset, do_im_time)
             CASE (gw_pade_approx)
-
-               PRINT *, 'num_fit_points outside =', num_fit_points
 
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                       z_value, m_value, vec_Sigma_c_gw(:, :, ikp), &
@@ -3817,8 +3809,6 @@ CONTAINS
       CPASSERT(LBOUND(x, 1) == 1)
       CPASSERT(LBOUND(y, 1) == 1)
 
-      PRINT *, 'num_fit_points inside =', num_fit_points
-
       ALLOCATE (ypoints(nparam))
       !omega=i0 is in element x(1)
       idat = 1
@@ -4859,9 +4849,9 @@ CONTAINS
       ALLOCATE (vec_Sigma_c_gw_sin_tau(gw_corr_lev_tot, num_integ_points))
       vec_Sigma_c_gw_sin_tau = 0.0_dp
 
-      ALLOCATE (vec_Sigma_c_gw_cos_omega(gw_corr_lev_tot, num_integ_points))
+      ALLOCATE (vec_Sigma_c_gw_cos_omega(gw_corr_lev_tot, num_points_G_and_W))
       vec_Sigma_c_gw_cos_omega = 0.0_dp
-      ALLOCATE (vec_Sigma_c_gw_sin_omega(gw_corr_lev_tot, num_integ_points))
+      ALLOCATE (vec_Sigma_c_gw_sin_omega(gw_corr_lev_tot, num_points_G_and_W))
       vec_Sigma_c_gw_sin_omega = 0.0_dp
 
       ALLOCATE (delta_corr_omega(1+homo-gw_corr_lev_occ:homo+gw_corr_lev_virt, num_integ_points))
@@ -4922,27 +4912,27 @@ CONTAINS
    
          END DO ! jquad (tau)
 
-      END IF
-
-      ! Fourier transform from time to frequency
-      DO jquad = 1, num_fit_points
-
-         DO iquad = 1, num_integ_points
-
-            omega = tj(jquad)
-            tau = tau_tj(iquad)
-            weight_cos = weights_cos_tf_t_to_w(jquad, iquad)*COS(omega*tau)
-            weight_sin = weights_sin_tf_t_to_w(jquad, iquad)*SIN(omega*tau)
-
-            vec_Sigma_c_gw_cos_omega(:, jquad) = vec_Sigma_c_gw_cos_omega(:, jquad)+ &
-                                                 weight_cos*vec_Sigma_c_gw_cos_tau(:, iquad)
-
-            vec_Sigma_c_gw_sin_omega(:, jquad) = vec_Sigma_c_gw_sin_omega(:, jquad)+ &
-                                                 weight_sin*vec_Sigma_c_gw_sin_tau(:, iquad)
-
+         ! Fourier transform from time to frequency
+         DO jquad = 1, num_fit_points
+   
+            DO iquad = 1, num_integ_points
+   
+               omega = tj(jquad)
+               tau = tau_tj(iquad)
+               weight_cos = weights_cos_tf_t_to_w(jquad, iquad)*COS(omega*tau)
+               weight_sin = weights_sin_tf_t_to_w(jquad, iquad)*SIN(omega*tau)
+   
+               vec_Sigma_c_gw_cos_omega(:, jquad) = vec_Sigma_c_gw_cos_omega(:, jquad)+ &
+                                                    weight_cos*vec_Sigma_c_gw_cos_tau(:, iquad)
+   
+               vec_Sigma_c_gw_sin_omega(:, jquad) = vec_Sigma_c_gw_sin_omega(:, jquad)+ &
+                                                    weight_sin*vec_Sigma_c_gw_sin_tau(:, iquad)
+   
+            END DO
+   
          END DO
 
-      END DO
+      END IF
 
       ! for occupied levels, we need the correlation self-energy for negative omega. Therefore, weight_sin
       ! should be computed with -omega, which results in an additional minus for vec_Sigma_c_gw_sin_omega:
@@ -4950,6 +4940,8 @@ CONTAINS
 
       vec_Sigma_c_gw(:, 1:num_fit_points, 1) = vec_Sigma_c_gw_cos_omega(:, 1:num_fit_points)+ &
                                                im_unit*vec_Sigma_c_gw_sin_omega(:, 1:num_fit_points)
+
+      PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
 
       IF (do_ri_Sigma_x .AND. count_ev_sc_GW == 1) THEN
 
