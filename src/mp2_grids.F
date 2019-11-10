@@ -302,6 +302,8 @@ CONTAINS
       ALLOCATE(wj_safe(num_freq_points))
       wj_safe(1:num_freq_points) = a_scaling/TAN(wj(1:num_freq_points))
 
+      DEALLOCATE(tj, wj)
+
       CALL timestop(handle)
 
    END SUBROUTINE safe_freq_clenshaw_grid
@@ -377,21 +379,20 @@ CONTAINS
       tj(num_integ_points) = pi/2.0_dp
       wj(num_integ_points) = pi/(2.0_dp*num_integ_points*SIN(tj(num_integ_points))**2)
 
-      a_scaling = 1.0_dp
-      IF (my_open_shell) THEN
-         CALL calc_scaling_factor(a_scaling, para_env, para_env_RPA, homo, virtual, Eigenval, &
-                                  num_integ_points, num_integ_group, color_rpa_group, &
-                                  tj, wj, fm_mat_S, &
-                                  homo_beta, virtual_beta, dimen_ia_beta, Eigenval_beta, fm_mat_S_beta)
-      ELSE
-         CALL calc_scaling_factor(a_scaling, para_env, para_env_RPA, homo, virtual, Eigenval, &
-                                  num_integ_points, num_integ_group, color_rpa_group, &
-                                  tj, wj, fm_mat_S)
-      END IF
-
-      ! for G0W0, we may set the scaling factor by hand
       IF (my_do_gw .AND. ext_scaling > 0.0_dp) THEN
          a_scaling = ext_scaling
+      ELSE
+         a_scaling = 1.0_dp
+         IF (my_open_shell) THEN
+            CALL calc_scaling_factor(a_scaling, para_env, para_env_RPA, homo, virtual, Eigenval, &
+                                     num_integ_points, num_integ_group, color_rpa_group, &
+                                     tj, wj, fm_mat_S, &
+                                     homo_beta, virtual_beta, dimen_ia_beta, Eigenval_beta, fm_mat_S_beta)
+         ELSE
+            CALL calc_scaling_factor(a_scaling, para_env, para_env_RPA, homo, virtual, Eigenval, &
+                                     num_integ_points, num_integ_group, color_rpa_group, &
+                                     tj, wj, fm_mat_S)
+         END IF
       END IF
 
       IF (unit_nr > 0) WRITE (unit_nr, '(T3,A,T56,F25.5)') 'INTEG_INFO| Scaling parameter:', a_scaling
