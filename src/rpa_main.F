@@ -1580,9 +1580,10 @@ CONTAINS
          cut_RI = mp2_env%ri_rpa_im_time_util(1)%cut_RI
          eps_filter_im_time = mp2_env%ri_rpa_im_time%eps_filter_im_time
          stabilize_exp = mp2_env%ri_rpa_im_time%stabilize_exp
+         num_points_G_and_W = MAX(mp2_env%ri_g0w0%num_points_G_and_W, num_integ_points)
 
          CALL alloc_im_time(qs_env, mp2_env, para_env, para_env_sub, dimen_RI, dimen_RI_red, num_integ_points, &
-                            fm_mat_Q, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, &
+                            num_points_G_and_W, fm_mat_Q, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                             fm_matrix_L_RI_metric, mat_munu, mat_dm_occ_local, mat_dm_virt_local, mat_P_global, mat_M, &
                             mat_3c_overl_int, mat_3c_overl_int_mao_for_occ, mat_3c_overl_int_mao_for_virt, do_dbcsr_t, &
                             t_3c_O, matrix_s, kpoints, eps_filter, eps_filter_im_time, &
@@ -1612,7 +1613,6 @@ CONTAINS
                                 row_blk_size=prim_blk_sizes)
 
             gw_corr_lev_tot = gw_corr_lev_occ+gw_corr_lev_virt
-            num_points_G_and_W = MAX(mp2_env%ri_g0w0%num_points_G_and_W, num_integ_points)
 
             IF (.NOT. do_kpoints_cubic_RPA) THEN
                IF (my_open_shell) THEN
@@ -1823,7 +1823,7 @@ CONTAINS
                "SPARSITY_INFO| Second eps filter for imaginary time:", eps_filter_im_time
 
             ! for evGW, we have to ensure that mat_P_omega is zero
-            CALL zero_mat_P_omega(mat_P_omega, num_integ_points, size_P)
+            CALL zero_mat_P_omega(mat_P_omega, num_points_G_and_W, size_P)
 
             ! compute the matrix Q(it) and Fourier transform it directly to mat_P_omega(iw)
             CALL compute_mat_P_omega(mat_P_omega, fm_scaled_dm_occ_tau, &
@@ -1839,7 +1839,7 @@ CONTAINS
                                      mat_dm_loc_occ_cut, mat_dm_loc_virt_cut, &
                                      weights_cos_tf_t_to_w, tj, tau_tj, e_fermi, eps_filter, alpha, &
                                      eps_filter_im_time, Eigenval, nmo, n_group_col, &
-                                     group_size_P, num_integ_points, cut_memory, cut_RI, &
+                                     group_size_P, num_integ_points, num_points_G_and_W, cut_memory, cut_RI, &
                                      unit_nr, mp2_env, para_env, para_env_sub, &
                                      starts_array_prim_col, ends_array_prim_col, &
                                      starts_array_prim_row, ends_array_prim_row, &
@@ -1859,7 +1859,7 @@ CONTAINS
             IF (my_open_shell) THEN
                ! For SOS-MP2 we need the same calculation for alpha and beta spin independently, for RPA the sum of both
                IF (do_ri_sos_laplace_mp2) THEN
-                  CALL zero_mat_P_omega(mat_P_omega_beta, num_integ_points, size_P)
+                  CALL zero_mat_P_omega(mat_P_omega_beta, num_points_G_and_W, size_P)
 
                   CALL compute_mat_P_omega(mat_P_omega_beta, fm_scaled_dm_occ_tau, &
                                            fm_scaled_dm_virt_tau, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, &
@@ -1874,7 +1874,7 @@ CONTAINS
                                            mat_dm_loc_occ_cut, mat_dm_loc_virt_cut, &
                                            weights_cos_tf_t_to_w, tj, tau_tj, e_fermi_beta, eps_filter, alpha, &
                                            eps_filter_im_time, Eigenval_beta, nmo, n_group_col, &
-                                           group_size_P, num_integ_points, cut_memory, cut_RI, &
+                                           group_size_P, num_integ_points, num_points_G_and_W, cut_memory, cut_RI, &
                                            unit_nr, mp2_env, para_env, para_env_sub, &
                                            starts_array_prim_col, ends_array_prim_col, &
                                            starts_array_prim_row, ends_array_prim_row, &
@@ -1903,7 +1903,7 @@ CONTAINS
                                            mat_dm_loc_occ_cut, mat_dm_loc_virt_cut, &
                                            weights_cos_tf_t_to_w, tj, tau_tj, e_fermi_beta, eps_filter, alpha, &
                                            eps_filter_im_time, Eigenval_beta, nmo, n_group_col, &
-                                           group_size_P, num_integ_points, cut_memory, cut_RI, &
+                                           group_size_P, num_integ_points, num_points_G_and_W, cut_memory, cut_RI, &
                                            unit_nr, mp2_env, para_env, para_env_sub, &
                                            starts_array_prim_col, ends_array_prim_col, &
                                            starts_array_prim_row, ends_array_prim_row, &
@@ -2097,7 +2097,7 @@ CONTAINS
             IF (my_open_shell) THEN
                CALL GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
-                                      nmo, num_fit_points, num_integ_points, &
+                                      nmo, num_fit_points, num_integ_points, num_points_G_and_W, &
                                       unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
@@ -2119,7 +2119,7 @@ CONTAINS
             ELSE
                CALL GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
-                                      nmo, num_fit_points, num_integ_points, &
+                                      nmo, num_fit_points, num_integ_points, num_points_G_and_W, &
                                       unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &

@@ -178,7 +178,7 @@ CONTAINS
 !> \param mat_P_omega_beta ...
 ! **************************************************************************************************
    SUBROUTINE alloc_im_time(qs_env, mp2_env, para_env, para_env_sub, dimen_RI, dimen_RI_red, num_integ_points, &
-                            fm_mat_Q, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, &
+                            num_points_G_and_W, fm_mat_Q, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                             fm_matrix_L_RI_metric, mat_munu, mat_dm_occ_local, mat_dm_virt_local, mat_P_global, mat_M, &
                             mat_3c_overl_int, mat_3c_overl_int_mao_for_occ, mat_3c_overl_int_mao_for_virt, do_dbcsr_t, &
                             t_3c_O, matrix_s, kpoints, eps_filter, eps_filter_im_time, &
@@ -202,7 +202,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(mp2_type), POINTER                            :: mp2_env
       TYPE(cp_para_env_type), POINTER                    :: para_env, para_env_sub
-      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points
+      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points, num_points_G_and_W
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q
       LOGICAL, INTENT(IN)                                :: do_mao
       TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff_occ, fm_mo_coeff_virt
@@ -383,10 +383,10 @@ CONTAINS
          size_P = 1
       END IF
 
-      CALL alloc_mat_P_omega(mat_P_omega, num_integ_points, size_P, mat_P_global%matrix)
+      CALL alloc_mat_P_omega(mat_P_omega, num_points_G_and_W, size_P, mat_P_global%matrix)
 
       IF (my_open_shell .AND. do_ri_sos_laplace_mp2) THEN
-         CALL alloc_mat_P_omega(mat_P_omega_beta, num_integ_points, size_P, mat_P_global%matrix)
+         CALL alloc_mat_P_omega(mat_P_omega_beta, num_points_G_and_W, size_P, mat_P_global%matrix)
       END IF
 
       IF (do_kpoints_cubic_RPA .OR. do_kpoints_from_Gamma) THEN
