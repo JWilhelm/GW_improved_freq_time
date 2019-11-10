@@ -152,10 +152,10 @@ CONTAINS
       END IF
 
       IF(my_do_mixed_minimax_clenshaw) THEN
-        CALL safe_freq_clenshaw_grid(tj, wj, a_scaling, tj_safe, wj_safe, num_freq_points)
+        CALL compute_tj_from_clenshaw(tj, a_scaling)
       END IF
 
-      IF (.NOT. do_ri_sos_laplace_mp2) THEN
+      IF (.NOT. do_ri_sos_laplace_mp2 .AND. (.NOT. my_do_mixed_minimax_clenshaw) ) THEN
          ALLOCATE (x_tw(2*num_freq_points))
          x_tw = 0.0_dp
          ierr = 0
@@ -245,6 +245,17 @@ CONTAINS
             CALL get_l_sq_wghts_cos_tf_t_to_w(num_freq_points, num_time_points, tau_tj, weights_cos_tf_t_to_w, tj, &
                                               Emin, Emax, max_error_min, num_points_per_magnitude)
 
+            PRINT *, 'jquad, omega, weight'
+            IF(my_do_mixed_minimax_clenshaw) THEN
+              DO jquad = 1, num_freq_points
+                  PRINT *, num_freq_points+1-jquad, tj( num_freq_points+1-jquad), wj(num_freq_points+1-jquad)
+              END DO
+            ELSE
+              DO jquad = 1, num_freq_points
+                  PRINT *, jquad, tj(jquad),  wj(jquad)
+              END DO
+            END IF
+
             IF (do_gw_im_time .AND. (.NOT. my_do_mixed_minimax_clenshaw)) THEN
 
                CPASSERT(num_freq_points == num_time_points)
@@ -274,21 +285,16 @@ CONTAINS
 
       END IF
 
-      IF(my_do_mixed_minimax_clenshaw) THEN
-        DEALLOCATE(tj_safe, wj_safe)
-      END IF
-
       CALL timestop(handle)
 
    END SUBROUTINE get_minimax_grid
 
-   SUBROUTINE safe_freq_clenshaw_grid(tj, wj, a_scaling, tj_safe, wj_safe, num_freq_points)
+   SUBROUTINE compute_tj_from_clenshaw(tj, a_scaling)
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(INOUT)                          :: tj, wj, tj_safe, wj_safe
-      INTEGER, INTENT(IN) :: num_freq_points
+         INTENT(INOUT)                          :: tj
       REAL(KIND=dp), INTENT(IN)            :: a_scaling
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'safe_freq_clenshaw_grid', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_tj_from_clenshaw', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, jquad
@@ -296,17 +302,11 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      ALLOCATE(tj_safe(num_freq_points))
-      tj_safe(1:num_freq_points) = a_scaling/TAN(tj(1:num_freq_points))
-
-      ALLOCATE(wj_safe(num_freq_points))
-      wj_safe(1:num_freq_points) = a_scaling/TAN(wj(1:num_freq_points))
-
-      DEALLOCATE(tj, wj)
+      tj(:) = a_scaling/TAN(tj(:))
 
       CALL timestop(handle)
 
-   END SUBROUTINE safe_freq_clenshaw_grid
+   END SUBROUTINE compute_tj_from_clenshaw
 
 ! **************************************************************************************************
 !> \brief ...
@@ -855,8 +855,6 @@ CONTAINS
 
       ! loop over all omega frequency points
       DO jquad = 1, num_freq_points
-
-         chi2_min_jquad = 100.0_dp
 
          ! set the x-values logarithmically in the interval [Emin,Emax]
          multiplicator = (E_max/E_min)**(1.0_dp/(REAL(num_x_nodes, KIND=dp)-1.0_dp))
