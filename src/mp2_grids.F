@@ -58,7 +58,6 @@ CONTAINS
 !> \param qs_env ...
 !> \param do_gw_im_time ...
 !> \param do_kpoints_cubic_RPA ...
-!> \param ext_scaling ...
 !> \param a_scaling ...
 !> \param e_fermi ...
 !> \param tj ...
@@ -71,43 +70,45 @@ CONTAINS
 !> \param dimen_ia_beta ...
 !> \param Eigenval_beta ...
 ! **************************************************************************************************
-   SUBROUTINE get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, &
+   SUBROUTINE get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_time_points, num_freq_points,&
                                   do_im_time, do_ri_sos_laplace_mp2, do_print, tau_tj, tau_wj, qs_env, do_gw_im_time, &
-                                  do_kpoints_cubic_RPA, ext_scaling, a_scaling, e_fermi, tj, wj, mp2_env, weights_cos_tf_t_to_w, &
+                                  do_kpoints_cubic_RPA, a_scaling, e_fermi, tj, wj, mp2_env, weights_cos_tf_t_to_w, &
                                   weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
-                                  homo_beta, dimen_ia_beta, Eigenval_beta)
+                                  homo_beta, dimen_ia_beta, Eigenval_beta, do_mixed_minimax_clenshaw)
 
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN)                                :: unit_nr, homo
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
-      INTEGER, INTENT(IN)                                :: num_integ_points
+      INTEGER, INTENT(IN)                                :: num_time_points, num_freq_points
       LOGICAL, INTENT(IN)                                :: do_im_time, do_ri_sos_laplace_mp2, &
                                                             do_print
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(OUT)                                     :: tau_tj, tau_wj
       TYPE(qs_environment_type), OPTIONAL, POINTER       :: qs_env
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_gw_im_time, do_kpoints_cubic_RPA
-      REAL(KIND=dp), INTENT(IN), OPTIONAL                :: ext_scaling
-      REAL(KIND=dp), INTENT(OUT), OPTIONAL               :: a_scaling, e_fermi
+      REAL(KIND=dp), INTENT(IN), OPTIONAL                :: a_scaling
+      REAL(KIND=dp), INTENT(OUT), OPTIONAL               :: e_fermi
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(OUT), OPTIONAL                           :: tj, wj
+         INTENT(INOUT), OPTIONAL                           :: tj, wj
       TYPE(mp2_type), OPTIONAL, POINTER                  :: mp2_env
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
          INTENT(OUT), OPTIONAL                           :: weights_cos_tf_t_to_w, &
                                                             weights_cos_tf_w_to_t, &
                                                             weights_sin_tf_t_to_w
       INTEGER, INTENT(IN), OPTIONAL                      :: homo_beta, dimen_ia_beta
+      LOGICAL, INTENT(IN), OPTIONAL                      :: do_mixed_minimax_clenshaw
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'get_minimax_grid', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, ierr, jquad, &
-                                                            num_points_per_magnitude
-      LOGICAL                                            :: my_do_kpoints, my_open_shell
+                                                            num_points_per_magnitude, num_integ_points
+      LOGICAL                                            :: my_do_kpoints, my_open_shell, my_do_mixed_minimax_clenshaw
       REAL(KIND=dp)                                      :: E_Range, Emax, Emax_beta, Emin, &
                                                             Emin_beta, max_error_min, scaling
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: x_tw
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:) :: tj_safe, wj_safe
 
       CALL timeset(routineN, handle)
 
@@ -120,7 +121,7 @@ CONTAINS
       ! Test whether all necessary variables are available
       my_do_kpoints = .FALSE.
       IF (.NOT. do_ri_sos_laplace_mp2) THEN
-         IF (.NOT. (PRESENT(do_gw_im_time) .AND. PRESENT(do_kpoints_cubic_RPA) .AND. PRESENT(ext_scaling) .AND. PRESENT(a_scaling) &
+         IF (.NOT. (PRESENT(do_gw_im_time) .AND. PRESENT(do_kpoints_cubic_RPA) .AND. PRESENT(a_scaling) &
                     .AND. PRESENT(e_fermi) .AND. PRESENT(tj) .AND. PRESENT(wj) .AND. PRESENT(weights_cos_tf_t_to_w) .AND. &
                     PRESENT(weights_cos_tf_w_to_t) .AND. PRESENT(weights_sin_tf_t_to_w) .AND. PRESENT(mp2_env))) THEN
             CPABORT("Need more parameters without SOS-MP2")
@@ -128,14 +129,15 @@ CONTAINS
          my_do_kpoints = do_kpoints_cubic_RPA
       END IF
 
+      my_do_mixed_minimax_clenshaw = .FALSE.
+      IF(PRESENT(do_mixed_minimax_clenshaw)) THEN
+        my_do_mixed_minimax_clenshaw = do_mixed_minimax_clenshaw
+      END IF
+
       IF (my_do_kpoints) THEN
-
          CALL gap_and_max_eig_diff_kpoints(qs_env, para_env, Emin, Emax, e_fermi)
-
          E_Range = Emax/Emin
-
       ELSE
-
          Emin = Eigenval(homo+1)-Eigenval(homo)
          Emax = MAXVAL(Eigenval)-MINVAL(Eigenval)
          IF (my_open_shell) THEN
@@ -147,24 +149,27 @@ CONTAINS
             END IF
          END IF
          E_Range = Emax/Emin
+      END IF
 
+      IF(my_do_mixed_minimax_clenshaw) THEN
+        CALL safe_freq_clenshaw_grid(tj, wj, a_scaling, tj_safe, wj_safe, num_freq_points)
       END IF
 
       IF (.NOT. do_ri_sos_laplace_mp2) THEN
-         ALLOCATE (x_tw(2*num_integ_points))
+         ALLOCATE (x_tw(2*num_freq_points))
          x_tw = 0.0_dp
          ierr = 0
-         CALL get_rpa_minimax_coeff(num_integ_points, E_Range, x_tw, ierr)
+         CALL get_rpa_minimax_coeff(num_freq_points, E_Range, x_tw, ierr)
 
-         ALLOCATE (tj(num_integ_points))
+         ALLOCATE (tj(num_freq_points))
          tj = 0.0_dp
 
-         ALLOCATE (wj(num_integ_points))
+         ALLOCATE (wj(num_freq_points))
          wj = 0.0_dp
 
-         DO jquad = 1, num_integ_points
+         DO jquad = 1, num_freq_points
             tj(jquad) = x_tw(jquad)
-            wj(jquad) = x_tw(jquad+num_integ_points)
+            wj(jquad) = x_tw(jquad+num_freq_points)
          END DO
 
          DEALLOCATE (x_tw)
@@ -173,7 +178,7 @@ CONTAINS
             WRITE (UNIT=unit_nr, FMT="(T3,A,T66,F15.4)") &
                "INTEG_INFO| Range for the minimax approximation:", E_Range
             WRITE (UNIT=unit_nr, FMT="(T3,A,T54,A,T72,A)") "INTEG_INFO| Minimax parameters:", "Weights", "Abscissas"
-            DO jquad = 1, num_integ_points
+            DO jquad = 1, num_freq_points
                WRITE (UNIT=unit_nr, FMT="(T41,F20.10,F20.10)") wj(jquad), tj(jquad)
             END DO
             CALL m_flush(unit_nr)
@@ -192,24 +197,24 @@ CONTAINS
       ! set up the minimax time grid
       IF (do_im_time .OR. do_ri_sos_laplace_mp2) THEN
 
-         ALLOCATE (x_tw(2*num_integ_points))
+         ALLOCATE (x_tw(2*num_time_points))
          x_tw = 0.0_dp
 
-         CALL get_exp_minimax_coeff(num_integ_points, E_Range, x_tw)
+         CALL get_exp_minimax_coeff(num_time_points, E_Range, x_tw)
 
          ! For RPA we include already a factor of two (see later steps)
          scaling = 2.0_dp
          IF (do_ri_sos_laplace_mp2) scaling = 1.0_dp
 
-         ALLOCATE (tau_tj(0:num_integ_points))
+         ALLOCATE (tau_tj(0:num_time_points))
          tau_tj = 0.0_dp
 
-         ALLOCATE (tau_wj(num_integ_points))
+         ALLOCATE (tau_wj(num_time_points))
          tau_wj = 0.0_dp
 
-         DO jquad = 1, num_integ_points
+         DO jquad = 1, num_time_points
             tau_tj(jquad) = x_tw(jquad)/scaling
-            tau_wj(jquad) = x_tw(jquad+num_integ_points)/scaling
+            tau_wj(jquad) = x_tw(jquad+num_time_points)/scaling
          END DO
 
          DEALLOCATE (x_tw)
@@ -222,7 +227,7 @@ CONTAINS
                "INTEG_INFO| Gap:", Emin
             WRITE (UNIT=unit_nr, FMT="(T3,A,T54,A,T72,A)") &
                "INTEG_INFO| Minimax parameters of the time grid:", "Weights", "Abscissas"
-            DO jquad = 1, num_integ_points
+            DO jquad = 1, num_time_points
                WRITE (UNIT=unit_nr, FMT="(T41,F20.10,F20.10)") tau_wj(jquad), tau_tj(jquad)
             END DO
             CALL m_flush(unit_nr)
@@ -233,14 +238,17 @@ CONTAINS
          tau_wj(:) = tau_wj(:)/Emin
 
          IF (.NOT. do_ri_sos_laplace_mp2) THEN
-            ALLOCATE (weights_cos_tf_t_to_w(num_integ_points, num_integ_points))
+            ALLOCATE (weights_cos_tf_t_to_w(num_freq_points, num_time_points))
             weights_cos_tf_t_to_w = 0.0_dp
 
             num_points_per_magnitude = mp2_env%ri_rpa_im_time%num_points_per_magnitude
-            CALL get_l_sq_wghts_cos_tf_t_to_w(num_integ_points, tau_tj, weights_cos_tf_t_to_w, tj, &
+            CALL get_l_sq_wghts_cos_tf_t_to_w(num_freq_points, num_time_points, tau_tj, weights_cos_tf_t_to_w, tj, &
                                               Emin, Emax, max_error_min, num_points_per_magnitude)
 
-            IF (do_gw_im_time) THEN
+            IF (do_gw_im_time .AND. (.NOT. my_do_mixed_minimax_clenshaw)) THEN
+
+               CPASSERT(num_freq_points == num_time_points)
+               num_integ_points = num_freq_points
 
                ! get the weights for the cosine transform W^c(iw) -> W^c(it)
                ALLOCATE (weights_cos_tf_w_to_t(num_integ_points, num_integ_points))
@@ -266,9 +274,37 @@ CONTAINS
 
       END IF
 
+      IF(my_do_mixed_minimax_clenshaw) THEN
+        DEALLOCATE(tj_safe, wj_safe)
+      END IF
+
       CALL timestop(handle)
 
    END SUBROUTINE get_minimax_grid
+
+   SUBROUTINE safe_freq_clenshaw_grid(tj, wj, a_scaling, tj_safe, wj_safe, num_freq_points)
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
+         INTENT(INOUT)                          :: tj, wj, tj_safe, wj_safe
+      INTEGER, INTENT(IN) :: num_freq_points
+      REAL(KIND=dp), INTENT(IN)            :: a_scaling
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'safe_freq_clenshaw_grid', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, jquad
+      LOGICAL                                            :: my_open_shell
+
+      CALL timeset(routineN, handle)
+
+      ALLOCATE(tj_safe(num_freq_points))
+      tj_safe(1:num_freq_points) = a_scaling/TAN(tj(1:num_freq_points))
+
+      ALLOCATE(wj_safe(num_freq_points))
+      wj_safe(1:num_freq_points) = a_scaling/TAN(wj(1:num_freq_points))
+
+      CALL timestop(handle)
+
+   END SUBROUTINE safe_freq_clenshaw_grid
 
 ! **************************************************************************************************
 !> \brief ...
@@ -745,7 +781,6 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief Calculate integration weights for the tau grid (in dependency of the omega node)
-!> \param num_integ_points ...
 !> \param tau_tj ...
 !> \param weights_cos_tf_t_to_w ...
 !> \param omega_tj ...
@@ -754,10 +789,10 @@ CONTAINS
 !> \param max_error ...
 !> \param num_points_per_magnitude ...
 ! **************************************************************************************************
-   SUBROUTINE get_l_sq_wghts_cos_tf_t_to_w(num_integ_points, tau_tj, weights_cos_tf_t_to_w, omega_tj, &
+   SUBROUTINE get_l_sq_wghts_cos_tf_t_to_w(num_freq_points, num_time_points, tau_tj, weights_cos_tf_t_to_w, omega_tj, &
                                            E_min, E_max, max_error, num_points_per_magnitude)
 
-      INTEGER, INTENT(IN)                                :: num_integ_points
+      INTEGER, INTENT(IN)                                :: num_freq_points, num_time_points
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
@@ -787,32 +822,30 @@ CONTAINS
 
       ! take at least as many x points as integration points to have clear
       ! input for the singular value decomposition
-      num_x_nodes = MAX(num_x_nodes, num_integ_points)
+      num_x_nodes = MAX(num_x_nodes, num_freq_points)
 
       ALLOCATE (x_values(num_x_nodes))
       x_values = 0.0_dp
       ALLOCATE (y_values(num_x_nodes))
       y_values = 0.0_dp
-      ALLOCATE (mat_A(num_x_nodes, num_integ_points))
+      ALLOCATE (mat_A(num_x_nodes, num_time_points))
       mat_A = 0.0_dp
-      ALLOCATE (tau_wj_work(num_integ_points))
+      ALLOCATE (tau_wj_work(num_time_points))
       tau_wj_work = 0.0_dp
-      ALLOCATE (work_array(2*num_integ_points))
-      work_array = 0.0_dp
-      ALLOCATE (sing_values(num_integ_points))
+      ALLOCATE (sing_values(num_time_points))
       sing_values = 0.0_dp
       ALLOCATE (mat_U(num_x_nodes, num_x_nodes))
       mat_U = 0.0_dp
-      ALLOCATE (mat_SinvVSinvT(num_x_nodes, num_integ_points))
+      ALLOCATE (mat_SinvVSinvT(num_x_nodes, num_time_points))
 
       mat_SinvVSinvT = 0.0_dp
       ! double the value nessary for 'A' to achieve good performance
-      lwork = 8*num_integ_points*num_integ_points+12*num_integ_points+2*num_x_nodes
+      lwork = 8*num_time_points*num_time_points+12*num_time_points+2*num_x_nodes
       ALLOCATE (work(lwork))
       work = 0.0_dp
-      ALLOCATE (iwork(8*num_integ_points))
+      ALLOCATE (iwork(8*num_time_points))
       iwork = 0
-      ALLOCATE (mat_SinvVSinvSigma(num_integ_points, num_x_nodes))
+      ALLOCATE (mat_SinvVSinvSigma(num_time_points, num_x_nodes))
       mat_SinvVSinvSigma = 0.0_dp
       ALLOCATE (vec_UTy(num_x_nodes))
       vec_UTy = 0.0_dp
@@ -820,7 +853,7 @@ CONTAINS
       max_error = 0.0_dp
 
       ! loop over all omega frequency points
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_freq_points
 
          chi2_min_jquad = 100.0_dp
 
@@ -838,22 +871,22 @@ CONTAINS
          END DO
 
          ! calculate mat_A
-         DO jjj = 1, num_integ_points
+         DO jjj = 1, num_time_points
             DO iii = 1, num_x_nodes
                mat_A(iii, jjj) = COS(omega*tau_tj(jjj))*EXP(-x_values(iii)*tau_tj(jjj))
             END DO
          END DO
 
          ! Singular value decomposition of mat_A
-         CALL DGESDD('A', num_x_nodes, num_integ_points, mat_A, num_x_nodes, sing_values, mat_U, num_x_nodes, &
+         CALL DGESDD('A', num_x_nodes, num_time_points, mat_A, num_x_nodes, sing_values, mat_U, num_x_nodes, &
                      mat_SinvVSinvT, num_x_nodes, work, lwork, iwork, info)
 
          CPASSERT(info == 0)
 
          ! integration weights = V Sigma U^T y
          ! 1) V*Sigma
-         DO jjj = 1, num_integ_points
-            DO iii = 1, num_integ_points
+         DO jjj = 1, num_time_points
+            DO iii = 1, num_time_points
                mat_SinvVSinvSigma(iii, jjj) = mat_SinvVSinvT(jjj, iii)/sing_values(jjj)
             END DO
          END DO
@@ -863,17 +896,17 @@ CONTAINS
                     0.0_dp, vec_UTy, num_x_nodes)
 
          ! 3) (V*Sigma) * (U^T y)
-         CALL DGEMM('N', 'N', num_integ_points, 1, num_x_nodes, 1.0_dp, mat_SinvVSinvSigma, num_integ_points, vec_UTy, &
-                    num_x_nodes, 0.0_dp, tau_wj_work, num_integ_points)
+         CALL DGEMM('N', 'N', num_time_points, 1, num_x_nodes, 1.0_dp, mat_SinvVSinvSigma, num_time_points, vec_UTy, &
+                    num_x_nodes, 0.0_dp, tau_wj_work, num_time_points)
 
          weights_cos_tf_t_to_w(jquad, :) = tau_wj_work(:)
 
          CALL calc_max_error_fit_tau_grid_with_cosine(max_error, omega, tau_tj, tau_wj_work, x_values, &
-                                                      y_values, num_integ_points, num_x_nodes)
+                                                      y_values, num_time_points, num_x_nodes)
 
       END DO ! jquad
 
-      DEALLOCATE (x_values, y_values, mat_A, tau_wj_work, work_array, sing_values, mat_U, mat_SinvVSinvT, &
+      DEALLOCATE (x_values, y_values, mat_A, tau_wj_work, sing_values, mat_U, mat_SinvVSinvT, &
                   work, iwork, mat_SinvVSinvSigma, vec_UTy)
 
       CALL timestop(handle)
@@ -1236,8 +1269,8 @@ CONTAINS
                tau_wj(jquad) = x_tw(jquad+num_integ_points)/2.0_dp
             END DO
 
-            CALL get_l_sq_wghts_cos_tf_t_to_w(num_integ_points, tau_tj, weights_cos_tf_t_to_w, tj, &
-                                              1.0_dp, Rc, max_error, 200)
+            CALL get_l_sq_wghts_cos_tf_t_to_w(num_integ_points, num_integ_points, tau_tj, &
+                                              weights_cos_tf_t_to_w, tj, 1.0_dp, Rc, max_error, 200)
 
             IF (iw > 0) THEN
                WRITE (iw, '(T2, I3, F12.1, ES12.3)') num_integ_points, Rc, max_error

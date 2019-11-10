@@ -1655,18 +1655,27 @@ CONTAINS
 
       IF(do_gw_im_time_clenshaw) THEN
 
+         CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_points_W, &
+                                num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, ext_scaling, a_scaling, tj, wj)
+
+         CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_points_W, do_im_time, &
+                               do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
+                               do_kpoints_cubic_RPA, a_scaling, e_fermi, tj, wj, mp2_env, &
+                               weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
+                               do_mixed_minimax_clenshaw=.TRUE.)
+
       ELSE IF (do_minimax_quad .OR. do_ri_sos_laplace_mp2) THEN
          IF (my_open_shell) THEN
-            CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, &
-                                     do_im_time, do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
-                                     do_kpoints_cubic_RPA, ext_scaling, a_scaling, e_fermi, tj, wj, mp2_env, &
-                                     weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
-                                     homo_beta, dimen_ia_beta, Eigenval_beta)
+            CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_integ_points, do_im_time, &
+                                  do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
+                                  do_kpoints_cubic_RPA, a_scaling, e_fermi, tj, wj, mp2_env, &
+                                  weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, &
+                                  homo_beta, dimen_ia_beta, Eigenval_beta)
          ELSE
-            CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, &
-                                     do_im_time, do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
-                                     do_kpoints_cubic_RPA, ext_scaling, a_scaling, e_fermi, tj, wj, mp2_env, &
-                                     weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w)
+            CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_integ_points, do_im_time, &
+                                  do_ri_sos_laplace_mp2,.NOT. do_ic_model, tau_tj, tau_wj, qs_env, do_gw_im_time, &
+                                  do_kpoints_cubic_RPA, a_scaling, e_fermi, tj, wj, mp2_env, &
+                                  weights_cos_tf_t_to_w, weights_cos_tf_w_to_t, weights_sin_tf_t_to_w)
          END IF
       ELSE
          IF (my_open_shell) THEN
