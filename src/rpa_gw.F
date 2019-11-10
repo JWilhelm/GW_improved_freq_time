@@ -379,7 +379,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE allocate_matrices_gw(vec_Sigma_c_gw, color_rpa_group, dimen_nm_gw, &
                                    gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                   nmo, num_integ_points, num_integ_group, unit_nr, &
+                                   nmo, num_integ_group, num_points_G_and_W, unit_nr, &
                                    gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                    do_minimax_quad, do_periodic, do_ri_Sigma_x, my_do_gw, &
                                    first_cycle_periodic_correction, do_GW_corr, &
@@ -395,7 +395,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(OUT)                 :: vec_Sigma_c_gw
       INTEGER, INTENT(IN) :: color_rpa_group, dimen_nm_gw, gw_corr_lev_occ, gw_corr_lev_virt, &
-         homo, nmo, num_integ_points, num_integ_group, unit_nr
+         homo, nmo, num_integ_group, unit_nr, num_points_G_and_W
       INTEGER, INTENT(INOUT)                             :: gw_corr_lev_tot, num_fit_points
       REAL(KIND=dp)                                      :: omega_max_fit
       LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_periodic, &
@@ -454,10 +454,10 @@ CONTAINS
       gw_corr_lev_tot = gw_corr_lev_occ+gw_corr_lev_virt
 
       ! fill the omega_frequency vector
-      ALLOCATE (vec_omega_gw(num_integ_points))
+      ALLOCATE (vec_omega_gw(num_points_G_and_W))
       vec_omega_gw = 0.0_dp
 
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_points_G_and_W
          IF (do_minimax_quad) THEN
             omega = tj(jquad)
          ELSE
@@ -469,11 +469,15 @@ CONTAINS
       ! determine number of fit points in the interval [0,w_max] for virt, or [-w_max,0] for occ
       num_fit_points = 0
 
-      DO jquad = 1, num_integ_points
+      PRINT *, 'vec_omega_gw =', vec_omega_gw
+
+      DO jquad = 1, num_points_G_and_W
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             num_fit_points = num_fit_points+1
          END IF
       END DO
+
+      PRINT *, 'num_fit_points =', num_fit_points
 
       IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
          IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
@@ -490,7 +494,7 @@ CONTAINS
 
       ! fill the omega vector with frequencies, where we calculate the self-energy
       iquad = 0
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_points_G_and_W
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             iquad = iquad+1
             vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
@@ -1596,6 +1600,9 @@ CONTAINS
                                                num_fit_points, max_iter_fit, crossing_search, homo, check_fit, stop_crit, &
                                                fermi_level_offset, do_im_time)
             CASE (gw_pade_approx)
+
+               PRINT *, 'num_fit_points outside =', num_fit_points
+
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                       z_value, m_value, vec_Sigma_c_gw(:, :, ikp), &
                                       mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
@@ -3809,6 +3816,8 @@ CONTAINS
       nstep = INT(num_fit_points/(nparam-1))
       CPASSERT(LBOUND(x, 1) == 1)
       CPASSERT(LBOUND(y, 1) == 1)
+
+      PRINT *, 'num_fit_points inside =', num_fit_points
 
       ALLOCATE (ypoints(nparam))
       !omega=i0 is in element x(1)

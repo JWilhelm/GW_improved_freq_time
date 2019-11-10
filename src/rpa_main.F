@@ -1723,7 +1723,7 @@ CONTAINS
          IF (my_open_shell) THEN
             CALL allocate_matrices_gw(vec_Sigma_c_gw, color_rpa_group, dimen_nm_gw, &
                                       gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                      nmo, num_integ_points, num_integ_group, unit_nr, &
+                                      nmo, num_integ_group, num_points_G_and_W, unit_nr, &
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
                                       first_cycle_periodic_correction, do_GW_corr, &
@@ -1738,7 +1738,7 @@ CONTAINS
          ELSE
             CALL allocate_matrices_gw(vec_Sigma_c_gw, color_rpa_group, dimen_nm_gw, &
                                       gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                      nmo, num_integ_points, num_integ_group, unit_nr, &
+                                      nmo, num_integ_group, num_points_G_and_W, unit_nr, &
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
                                       first_cycle_periodic_correction, do_GW_corr, &
@@ -2091,6 +2091,8 @@ CONTAINS
                                                    num_integ_points, stabilize_exp, fm_mat_L, wkp_W)
 
          END IF
+
+         PRINT *, 'num_fit_points =', num_fit_points
 
          ! G0W0 postprocessing: Fitting + correction of MO energies
          IF (my_do_gw) THEN
