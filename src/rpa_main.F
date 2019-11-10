@@ -81,7 +81,7 @@ MODULE rpa_main
                                               deallocate_matrices_gw,&
                                               deallocate_matrices_gw_im_time
    USE rpa_gw_ic,                       ONLY: calculate_ic_correction
-   USE rpa_gw_kpoints,                  ONLY: compute_self_energy_im_time_gw_kp
+   USE rpa_gw_kpoints,                  ONLY: compute_self_energy_cubic_gw_kp
    USE rpa_im_time,                     ONLY: compute_mat_P_omega,&
                                               zero_mat_P_omega
    USE rpa_kpoints,                     ONLY: RPA_postprocessing_kp
@@ -2076,7 +2076,7 @@ CONTAINS
          ! postprocessing for cubic scaling GW calculation with kpoints
          IF (do_gw_im_time .AND. do_kpoints_cubic_RPA) THEN
 
-            CALL compute_self_energy_im_time_gw_kp(vec_Sigma_c_gw, vec_Sigma_x_gw, &
+            CALL compute_self_energy_cubic_gw_kp(vec_Sigma_c_gw, vec_Sigma_x_gw, &
                                                    mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, :), &
                                                    mat_3c_overl_int, cell_to_index_3c, index_to_cell_3c, &
                                                    num_cells_dm, kpoints, unit_nr, gw_corr_lev_tot, num_3c_repl, &

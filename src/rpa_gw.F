@@ -88,7 +88,7 @@ MODULE rpa_gw
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'rpa_gw'
 
    PUBLIC :: allocate_matrices_gw_im_time, allocate_matrices_gw, GW_matrix_operations, GW_postprocessing, &
-             compute_self_energy_im_time_gw, deallocate_matrices_gw_im_time, deallocate_matrices_gw
+             deallocate_matrices_gw_im_time, deallocate_matrices_gw
 
 CONTAINS
 
@@ -1480,7 +1480,7 @@ CONTAINS
       IF (do_im_time .AND. .NOT. do_kpoints_cubic_RPA) THEN
          num_points_corr = mp2_env%ri_g0w0%num_omega_points
 
-         CALL compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, mat_greens_fct_virt, &
+         CALL compute_self_energy_cubic_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
                                              fm_scaled_dm_virt_tau, Eigenval, eps_filter, e_fermi, fm_mat_W, &
@@ -1495,7 +1495,7 @@ CONTAINS
 
          IF (my_open_shell) THEN
 
-            CALL compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, &
+            CALL compute_self_energy_cubic_gw(num_integ_points, nmo, tau_tj, tj, &
                                                 mat_greens_fct_occ_beta, mat_greens_fct_virt_beta, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4759,7 +4759,7 @@ CONTAINS
 !> \param vec_Sigma_x_gw ...
 !> \param do_beta ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, mat_greens_fct_virt, &
+   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
                                              fm_scaled_dm_virt_tau, Eigenval, eps_filter, e_fermi, fm_mat_W, &
@@ -4813,7 +4813,7 @@ CONTAINS
          INTENT(INOUT)                                   :: vec_Sigma_x_gw
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_im_time_gw', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_cubic_gw', &
          routineP = moduleN//':'//routineN
 
       COMPLEX(KIND=dp)                                   :: im_unit
@@ -4852,6 +4852,8 @@ CONTAINS
 
       ALLOCATE (delta_corr_omega(1+homo-gw_corr_lev_occ:homo+gw_corr_lev_virt, num_integ_points))
       delta_corr_omega(:, :) = (0.0_dp, 0.0_dp)
+
+!      IF(.NOT. 
 
       DO jquad = 1, num_integ_points
 
@@ -5056,7 +5058,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE compute_self_energy_im_time_gw
+   END SUBROUTINE compute_self_energy_cubic_gw
 
    SUBROUTINE  dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                 mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &

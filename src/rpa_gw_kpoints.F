@@ -77,7 +77,7 @@ MODULE rpa_gw_kpoints
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'rpa_gw_kpoints'
 
    PUBLIC :: compute_Wc_real_space_tau_GW, compute_Wc_kp_tau_GW, &
-             compute_wkp_W, compute_self_energy_im_time_gw_kp
+             compute_wkp_W, compute_self_energy_cubic_gw_kp
 
 CONTAINS
 
@@ -827,7 +827,7 @@ CONTAINS
 !> \param fm_mat_L ...
 !> \param wkp_W ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_im_time_gw_kp(vec_Sigma_c_gw, vec_Sigma_x_gw, vec_Sigma_x_minus_vxc_gw, &
+   SUBROUTINE compute_self_energy_cubic_gw_kp(vec_Sigma_c_gw, vec_Sigma_x_gw, vec_Sigma_x_minus_vxc_gw, &
                                                 mat_3c_overl_int, cell_to_index_3c, index_to_cell_3c, &
                                                 num_cells_dm, kpoints, &
                                                 unit_nr, gw_corr_lev_tot, num_3c_repl, nkp_self_energy, num_fit_points, &
@@ -868,7 +868,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_mat_L
       REAL(KIND=dp), DIMENSION(:), POINTER               :: wkp_W
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_im_time_gw_kp', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_cubic_gw_kp', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, ikp, maxcell, &
