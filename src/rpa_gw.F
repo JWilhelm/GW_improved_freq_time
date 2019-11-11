@@ -1482,7 +1482,7 @@ CONTAINS
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
-                                             fm_scaled_dm_virt_tau, Eigenval, eps_filter, &
+                                             fm_scaled_dm_virt_tau, Eigenval, vec_omega_fit_gw, eps_filter, &
                                              e_fermi, fermi_level_offset, fm_mat_W, &
                                              gw_corr_lev_tot, gw_corr_lev_occ, gw_corr_lev_virt, homo, count_ev_sc_GW, &
                                              mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, &
@@ -1500,7 +1500,7 @@ CONTAINS
                                                 mat_greens_fct_occ_beta, mat_greens_fct_virt_beta, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
-                                                fm_scaled_dm_virt_tau, Eigenval_beta, eps_filter, &
+                                                fm_scaled_dm_virt_tau, Eigenval_beta, vec_omega_fit_gw, eps_filter, &
                                                 e_fermi_beta, fermi_level_offset, fm_mat_W, &
                                                 gw_corr_lev_tot, gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
                                                 count_ev_sc_GW, mat_3c_overl_int_gw_beta, mat_contr_gf_occ, mat_contr_gf_virt, &
@@ -4767,7 +4767,7 @@ CONTAINS
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
-                                             fm_scaled_dm_virt_tau, Eigenval, eps_filter, &
+                                             fm_scaled_dm_virt_tau, Eigenval, vec_omega_fit_gw, eps_filter, &
                                              e_fermi, fermi_level_offset, fm_mat_W, &
                                              gw_corr_lev_tot, gw_corr_lev_occ, gw_corr_lev_virt, homo, count_ev_sc_GW, &
                                              mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
@@ -4785,7 +4785,7 @@ CONTAINS
                                                             matrix_s
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
          fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau
-      REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
+      REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval, vec_omega_fit_gw
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, fermi_level_offset
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
       INTEGER, INTENT(IN)                                :: gw_corr_lev_tot, gw_corr_lev_occ, &
@@ -4862,6 +4862,11 @@ CONTAINS
       ALLOCATE (delta_corr_omega(1+homo-gw_corr_lev_occ:homo+gw_corr_lev_virt, num_integ_points))
       delta_corr_omega(:, :) = (0.0_dp, 0.0_dp)
 
+      PRINT *, 'fermi_level_offset =', fermi_level_offset
+      PRINT *, ''
+      PRINT *, ''
+      PRINT *, ''
+
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
          ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
@@ -4872,7 +4877,7 @@ CONTAINS
 
             DO iquad = 1, num_fit_points
 
-               omega_diff = tj(iquad) - tj(jquad)
+               omega_diff = vec_omega_fit_gw(iquad) - tj(jquad)
 
                DO real_imaginary = 1, 2
 
@@ -4880,7 +4885,6 @@ CONTAINS
                   ! fm_scaled_dm_virt_tau. In the occ-matrix, we store the Gf with e_f = e_HOMO + fermi_level_offset, 
                   ! in the virt-matrix, we store the Gf with e_f = e_LUMO - fermi_level_offset. 
                   ! The Gf is imaginary, so we do a loop real_imaginary = 1, 2
-
                   CALL compute_Greens_function_freq(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff, &
                                                     fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                                     fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, fermi_level_offset, &
@@ -4900,6 +4904,8 @@ CONTAINS
 
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
+
+                     IF(n_level_gw==1) PRINT *, jquad, iquad, Sigma_c_gw_tmp
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + re_im*Sigma_c_gw_tmp
 
@@ -4976,7 +4982,17 @@ CONTAINS
 
       END IF
 
-      PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
+      DO n_level_gw = 1, gw_corr_lev_tot
+
+        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+
+        DO jquad = 1, num_fit_points
+
+          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+
+        END DO
+
+      END DO
 
       IF (do_ri_Sigma_x .AND. count_ev_sc_GW == 1) THEN
 
