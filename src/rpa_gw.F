@@ -4859,10 +4859,11 @@ CONTAINS
 
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
+         ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
          DO jquad = 1, num_points_G_and_W
 
-
-
+            CALL dbcsr_set(mat_W, 0.0_dp)
+            CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
 
             DO iquad = 1, num_fit_points
 
@@ -4873,7 +4874,16 @@ CONTAINS
                                             eps_filter, e_fermi, stabilize_exp, omega_i-omega_j, count_ev_sc_GW, &
                                             do_freq=.TRUE., do_time=.FALSE.)
 
+               DO n_level_gw = 1, gw_corr_lev_tot
 
+                  CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
+                                      mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
+                                      vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
+                                      vec_Sigma_c_gw_neg_tau(n_level_gw, jquad), &
+                                      do_W_contraction=(iquad==1))
+
+
+               END DO
 
             END DO
 
@@ -4888,10 +4898,10 @@ CONTAINS
             CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                          fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                          fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, do_freq=.FALSE., do_time=.TRUE.)
+                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, &
+                                         do_freq=.FALSE., do_time=.TRUE.)
 
             CALL dbcsr_set(mat_W, 0.0_dp)
-   
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
    
             DO n_level_gw = 1, gw_corr_lev_tot
@@ -4901,7 +4911,8 @@ CONTAINS
                CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                    mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                    vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
-                                   vec_Sigma_c_gw_neg_tau(n_level_gw, jquad))
+                                   vec_Sigma_c_gw_neg_tau(n_level_gw, jquad), &
+                                   do_W_contraction=.TRUE.)
    
                n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
    
@@ -5089,7 +5100,7 @@ CONTAINS
 
    SUBROUTINE  dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                 mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
-                                vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau)
+                                vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau, do_W_contraction)
 
       INTEGER, INTENT(IN)                                :: n_level_gw
       TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt, &
@@ -5099,6 +5110,7 @@ CONTAINS
       TYPE(dbcsr_p_type)                                 :: mat_SinvVSinv, mat_dm
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw
       REAL(KIND=dp), INTENT(INOUT) :: vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau
+      LOGICAL, INTENT(IN) :: do_W_contraction
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_cubic_GW', &
          routineP = moduleN//':'//routineN
@@ -5133,10 +5145,12 @@ CONTAINS
 
             CALL timestop(handle3)
 
-            CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
-
-            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                0.0_dp, mat_contr_W)
+            IF(do_W_contraction) THEN
+               CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
+   
+               CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                                   0.0_dp, mat_contr_W)
+            END IF
 
             CALL timestop(handle3)
 
