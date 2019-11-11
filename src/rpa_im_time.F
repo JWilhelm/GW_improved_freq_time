@@ -131,7 +131,7 @@ CONTAINS
                                     weights_cos_tf_t_to_w, &
                                     tj, tau_tj, e_fermi, eps_filter, &
                                     alpha, eps_filter_im_time, Eigenval, nmo, &
-                                    num_integ_points, num_points_G_and_W, cut_memory, unit_nr, &
+                                    num_integ_points, num_integ_points_freq, cut_memory, unit_nr, &
                                     mp2_env, para_env, &
                                     stabilize_exp, qs_env, index_to_cell_3c, cell_to_index_3c, &
                                     has_mat_P_blocks, do_ri_sos_laplace_mp2)
@@ -147,7 +147,7 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: starts_array_mc_t, ends_array_mc_t
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN)         :: weights_cos_tf_t_to_w
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: tj
-      INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_points_G_and_W
+      INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_integ_points_freq
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter_im_time, alpha, eps_filter, &
                                                             e_fermi
@@ -512,7 +512,7 @@ CONTAINS
 
                            tau = tau_tj(jquad)
 
-                           DO iquad = 1, num_points_G_and_W
+                           DO iquad = 1, num_integ_points_freq
 
                               omega = tj(iquad)
                               weight = weights_cos_tf_t_to_w(iquad, jquad)
@@ -688,7 +688,7 @@ CONTAINS
                                   mat_dm_loc_occ_cut, mat_dm_loc_virt_cut, weights_cos_tf_t_to_w, &
                                   tj, tau_tj, e_fermi, eps_filter, &
                                   alpha, eps_filter_im_time, Eigenval, nmo, n_group_col, &
-                                  group_size_P, num_integ_points, num_points_G_and_W, cut_memory, cut_RI, unit_nr, &
+                                  group_size_P, num_integ_points, num_integ_points_freq, cut_memory, cut_RI, unit_nr, &
                                   mp2_env, para_env, para_env_sub, &
                                   starts_array_prim_col, ends_array_prim_col, &
                                   starts_array_prim_row, ends_array_prim_row, &
@@ -722,7 +722,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :)                     :: weights_cos_tf_t_to_w
       REAL(KIND=dp), DIMENSION(:)                        :: tj
       INTEGER, INTENT(IN)                                :: num_integ_points, group_size_P, &
-                                                            n_group_col, nmo, num_points_G_and_W
+                                                            n_group_col, nmo, num_integ_points_freq
       REAL(KIND=dp), DIMENSION(:)                        :: Eigenval
       REAL(KIND=dp)                                      :: eps_filter_im_time, alpha, eps_filter, &
                                                             e_fermi
@@ -784,7 +784,7 @@ CONTAINS
                                     weights_cos_tf_t_to_w, &
                                     tj, tau_tj, e_fermi, eps_filter, &
                                     alpha, eps_filter_im_time, Eigenval, nmo, &
-                                    num_integ_points, num_points_G_and_W, cut_memory, unit_nr, &
+                                    num_integ_points, num_integ_points_freq, cut_memory, unit_nr, &
                                     mp2_env, para_env, &
                                     stabilize_exp, qs_env, index_to_cell_3c, cell_to_index_3c, &
                                     has_mat_P_blocks, do_ri_sos_laplace_mp2)
@@ -1028,7 +1028,7 @@ CONTAINS
 
                            tau = tau_tj(jquad)
 
-                           DO iquad = 1, num_points_G_and_W
+                           DO iquad = 1, num_integ_points_freq
 
                               omega = tj(iquad)
                               weight = weights_cos_tf_t_to_w(iquad, jquad)
@@ -1235,13 +1235,13 @@ CONTAINS
 !> \param num_integ_points ...
 !> \param nkp ...
 ! **************************************************************************************************
-   SUBROUTINE zero_mat_P_omega(mat_P_omega, num_points_G_and_W, nkp)
+   SUBROUTINE zero_mat_P_omega(mat_P_omega, num_integ_points_freq, nkp)
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: mat_P_omega
-      INTEGER, INTENT(IN)                                :: num_points_G_and_W, nkp
+      INTEGER, INTENT(IN)                                :: num_integ_points_freq, nkp
 
       INTEGER                                            :: i_kp, jquad
 
-      DO jquad = 1, num_points_G_and_W
+      DO jquad = 1, num_integ_points_freq
          DO i_kp = 1, nkp
 
             CALL dbcsr_set(mat_P_omega(jquad, i_kp)%matrix, 0.0_dp)

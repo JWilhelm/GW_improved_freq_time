@@ -377,7 +377,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE allocate_matrices_gw(vec_Sigma_c_gw, color_rpa_group, dimen_nm_gw, &
                                    gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                   nmo, num_integ_group, num_points_G_and_W, unit_nr, &
+                                   nmo, num_integ_group, num_integ_points_freq, unit_nr, &
                                    gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                    do_minimax_quad, do_periodic, do_ri_Sigma_x, my_do_gw, &
                                    first_cycle_periodic_correction, do_GW_corr, &
@@ -393,7 +393,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(OUT)                 :: vec_Sigma_c_gw
       INTEGER, INTENT(IN) :: color_rpa_group, dimen_nm_gw, gw_corr_lev_occ, gw_corr_lev_virt, &
-         homo, nmo, num_integ_group, unit_nr, num_points_G_and_W
+         homo, nmo, num_integ_group, unit_nr, num_integ_points_freq
       INTEGER, INTENT(INOUT)                             :: gw_corr_lev_tot, num_fit_points
       REAL(KIND=dp)                                      :: omega_max_fit
       LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_periodic, &
@@ -452,10 +452,10 @@ CONTAINS
       gw_corr_lev_tot = gw_corr_lev_occ+gw_corr_lev_virt
 
       ! fill the omega_frequency vector
-      ALLOCATE (vec_omega_gw(num_points_G_and_W))
+      ALLOCATE (vec_omega_gw(num_integ_points_freq))
       vec_omega_gw = 0.0_dp
 
-      DO jquad = 1, num_points_G_and_W
+      DO jquad = 1, num_integ_points_freq
          IF (do_minimax_quad) THEN
             omega = tj(jquad)
          ELSE
@@ -467,7 +467,7 @@ CONTAINS
       ! determine number of fit points in the interval [0,w_max] for virt, or [-w_max,0] for occ
       num_fit_points = 0
 
-      DO jquad = 1, num_points_G_and_W
+      DO jquad = 1, num_integ_points_freq
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             num_fit_points = num_fit_points+1
          END IF
@@ -488,7 +488,7 @@ CONTAINS
 
       ! fill the omega vector with frequencies, where we calculate the self-energy
       iquad = 0
-      DO jquad = 1, num_points_G_and_W
+      DO jquad = 1, num_integ_points_freq
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             iquad = iquad+1
             vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
@@ -1371,7 +1371,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                 gw_corr_lev_tot, gw_corr_lev_virt, homo, &
-                                nmo, num_fit_points, num_integ_points, num_points_G_and_W, &
+                                nmo, num_fit_points, num_integ_points, num_integ_points_freq, &
                                 unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                 do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                 do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
@@ -1396,7 +1396,7 @@ CONTAINS
       INTEGER, INTENT(IN) :: count_ev_sc_GW, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, &
          homo, nmo, num_fit_points, num_integ_points
       INTEGER                                            :: num_points_corr
-      INTEGER, INTENT(IN)                                :: unit_nr, num_points_G_and_W
+      INTEGER, INTENT(IN)                                :: unit_nr, num_integ_points_freq
       LOGICAL, INTENT(IN)                                :: do_apply_ic_corr_to_gw, do_im_time, &
                                                             do_periodic, do_ri_Sigma_x, do_gw_im_time_mix_minimax_clenshaw
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
@@ -1478,7 +1478,7 @@ CONTAINS
       IF (do_im_time .AND. .NOT. do_kpoints_cubic_RPA) THEN
          num_points_corr = mp2_env%ri_g0w0%num_omega_points
 
-         CALL compute_self_energy_cubic_gw(num_integ_points, num_points_G_and_W, nmo, tau_tj, tj, &
+         CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -1496,7 +1496,7 @@ CONTAINS
 
          IF (my_open_shell) THEN
 
-            CALL compute_self_energy_cubic_gw(num_integ_points, num_points_G_and_W, nmo, tau_tj, tj, &
+            CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
                                                 mat_greens_fct_occ_beta, mat_greens_fct_virt_beta, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4763,7 +4763,7 @@ CONTAINS
 !> \param vec_Sigma_x_gw ...
 !> \param do_beta ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_points_G_and_W, nmo, tau_tj, tj, &
+   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4778,7 +4778,7 @@ CONTAINS
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                              first_cycle_periodic_correction, kpoints, num_fit_points, fm_mo_coeff, &
                                              do_GW_corr, do_ri_Sigma_x, vec_Sigma_x_gw, do_beta)
-      INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_points_G_and_W
+      INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_integ_points_freq
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj, tj
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  &
@@ -4854,9 +4854,9 @@ CONTAINS
       ALLOCATE (vec_Sigma_c_gw_sin_tau(gw_corr_lev_tot, num_integ_points))
       vec_Sigma_c_gw_sin_tau = 0.0_dp
 
-      ALLOCATE (vec_Sigma_c_gw_cos_omega(gw_corr_lev_tot, num_points_G_and_W))
+      ALLOCATE (vec_Sigma_c_gw_cos_omega(gw_corr_lev_tot, num_integ_points_freq))
       vec_Sigma_c_gw_cos_omega = 0.0_dp
-      ALLOCATE (vec_Sigma_c_gw_sin_omega(gw_corr_lev_tot, num_points_G_and_W))
+      ALLOCATE (vec_Sigma_c_gw_sin_omega(gw_corr_lev_tot, num_integ_points_freq))
       vec_Sigma_c_gw_sin_omega = 0.0_dp
 
       ALLOCATE (delta_corr_omega(1+homo-gw_corr_lev_occ:homo+gw_corr_lev_virt, num_integ_points))
@@ -4870,10 +4870,12 @@ CONTAINS
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
          ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
-         DO jquad = 1, num_points_G_and_W
+         DO jquad = 1, num_integ_points_freq
 
             CALL dbcsr_set(mat_W, 0.0_dp)
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
+
+            PRINT *, 'jquad =', jquad, 'fm_mat_W(jquad)%matrix%local_data =', fm_mat_W(jquad)%matrix%local_data(1:10,1:10)
 
             DO iquad = 1, num_fit_points
 

@@ -168,7 +168,7 @@ CONTAINS
       CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%GAMMA_ONLY_SIGMA", &
                                 l_val=mp2_env%ri_g0w0%do_gamma_only_sigma)
       CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%NUM_FREQ_POINTS_G_AND_W", &
-                                i_val=mp2_env%ri_g0w0%num_points_G_and_W)
+                                i_val=mp2_env%ri_g0w0%num_integ_points_freq)
 
       CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%BSE", &
                                 l_val=mp2_env%ri_g0w0%do_bse)
