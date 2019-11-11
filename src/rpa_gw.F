@@ -5139,48 +5139,47 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-            ! the following formulas are partially taken from Liu et al. PRB 94, 165109 (2016), Eq. (63) - (69)
+      ! the following formulas are partially taken from Liu et al. PRB 94, 165109 (2016), Eq. (63) - (69)
 
-            CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
+      CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
 
-            ! the occ Gf has no minus, but already include the minus from Sigma = -GW
-            CALL dbcsr_multiply("N", "N", -1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                mat_greens_fct_occ, 0.0_dp, mat_contr_gf_occ)
+      ! the occ Gf has no minus, but already include the minus from Sigma = -GW
+      CALL dbcsr_multiply("N", "N", -1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                          mat_greens_fct_occ, 0.0_dp, mat_contr_gf_occ)
 
-            CALL timestop(handle3)
+      CALL timestop(handle3)
 
-            CALL timeset(routineN//"_cubic_GW_operation_2", handle3)
+      CALL timeset(routineN//"_cubic_GW_operation_2", handle3)
 
-            ! the virt Gf has a minus, but already include the minus from Sigma = -GW
-            CALL dbcsr_multiply("N", "N", 1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                mat_greens_fct_virt, 0.0_dp, mat_contr_gf_virt)
+      ! the virt Gf has a minus, but already include the minus from Sigma = -GW
+      CALL dbcsr_multiply("N", "N", 1.0_dp, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                          mat_greens_fct_virt, 0.0_dp, mat_contr_gf_virt)
 
-            CALL timestop(handle3)
+      CALL timestop(handle3)
 
-            IF(do_W_contraction) THEN
-               CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
+      IF(do_W_contraction) THEN
+         CALL timeset(routineN//"_cubic_GW_operation_3", handle3)
    
-               CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                                   0.0_dp, mat_contr_W)
-            END IF
+         CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                             0.0_dp, mat_contr_W)
+         CALL timestop(handle3)
+      END IF
 
-            CALL timestop(handle3)
+      CALL timeset(routineN//"_cubic_GW_operation_4", handle3)
 
-            CALL timeset(routineN//"_cubic_GW_operation_4", handle3)
+      CALL dbcsr_dot(mat_contr_gf_virt, &
+                     mat_contr_W, &
+                     vec_Sigma_c_gw_pos_tau)
 
-            CALL dbcsr_dot(mat_contr_gf_virt, &
-                           mat_contr_W, &
-                           vec_Sigma_c_gw_pos_tau)
+      CALL timestop(handle3)
 
-            CALL timestop(handle3)
+      CALL timeset(routineN//"_cubic_GW_operation_5", handle3)
 
-            CALL timeset(routineN//"_cubic_GW_operation_5", handle3)
+      CALL dbcsr_dot(mat_contr_gf_occ, &
+                     mat_contr_W, &
+                     vec_Sigma_c_gw_neg_tau)
 
-            CALL dbcsr_dot(mat_contr_gf_occ, &
-                           mat_contr_W, &
-                           vec_Sigma_c_gw_neg_tau)
-
-            CALL timestop(handle3)
+      CALL timestop(handle3)
 
       CALL timestop(handle)
 
@@ -5346,17 +5345,16 @@ CONTAINS
       CALL cp_fm_get_info(matrix=fm_mo_coeff, &
                           nrow_local=nrow_local, &
                           ncol_local=ncol_local, &
-                          row_indices=row_indices, &
                           col_indices=col_indices)
 
       ! we have two different fermi levels for correcting occupied and virtual energy levels
       e_fermi = Eigenval(homo) - e_fermi
       CALL scale_mo_coeff(fm_mo_coeff_occ_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
-                          Eigenval, omega, real_imaginary)
+                          Eigenval, omega, real_imaginary, col_indices)
 
       e_fermi = Eigenval(homo+1) + e_fermi
       CALL scale_mo_coeff(fm_mo_coeff_virt_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
-                          Eigenval, omega, real_imaginary)
+                          Eigenval, omega, real_imaginary, col_indices)
 
       CALL cp_gemm(transa="N", transb="T", m=nmo, n=nmo, k=nmo, alpha=1.0_dp, &
                    matrix_a=fm_mo_coeff, matrix_b=fm_mo_coeff_occ_scaled, beta=0.0_dp, &
@@ -5403,7 +5401,7 @@ CONTAINS
    END SUBROUTINE compute_Greens_function_freq
 
    SUBROUTINE scale_mo_coeff(fm_mo_coeff_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local,  &
-                             Eigenval, omega, real_imaginary)
+                             Eigenval, omega, real_imaginary, col_indices)
 
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  matrix_s
       TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt
