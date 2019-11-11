@@ -4907,7 +4907,7 @@ CONTAINS
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
 
-                     IF(n_level_gw==1) PRINT *, jquad, iquad, Sigma_c_gw_tmp
+                     IF(n_level_gw==1) PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, Sigma_c_gw_tmp
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + re_im*Sigma_c_gw_tmp
 
@@ -5371,11 +5371,11 @@ CONTAINS
                           col_indices=col_indices)
 
       ! we have two different fermi levels for correcting occupied and virtual energy levels
-      e_fermi = Eigenval(homo) - e_fermi
+      e_fermi = Eigenval(homo) - fermi_level_offset
       CALL scale_mo_coeff(fm_mo_coeff_occ_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
-      e_fermi = Eigenval(homo+1) + e_fermi
+      e_fermi = Eigenval(homo+1) + fermi_level_offset
       CALL scale_mo_coeff(fm_mo_coeff_virt_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
@@ -5444,22 +5444,20 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      DO jjB = 1, nrow_local
-         DO iiB = 1, ncol_local
+      DO iiB = 1, ncol_local
 
-            i_global = col_indices(iiB)
+         i_global = col_indices(iiB)
 
-            energy_diff = e_fermi-Eigenval(i_global)
+         energy_diff = e_fermi-Eigenval(i_global)
 
-            IF(real_imaginary == 1) THEN
-               fm_mo_coeff_scaled%local_data(jjB, iiB) = fm_mo_coeff%local_data(jjB, iiB)*&
-                                                         energy_diff/(omega**2+energy_diff**2)
-            ELSE IF(real_imaginary == 2) THEN
-               fm_mo_coeff_scaled%local_data(jjB, iiB) = fm_mo_coeff%local_data(jjB, iiB)*&
-                                                         (-omega/(omega**2+energy_diff**2))
-            END IF
+         IF(real_imaginary == 1) THEN
+            fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
+                                                      energy_diff/(omega**2+energy_diff**2)
+         ELSE IF(real_imaginary == 2) THEN
+            fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
+                                                      (-omega/(omega**2+energy_diff**2))
+         END IF
 
-          END DO
       END DO
 
       CALL timestop(handle)
