@@ -4824,11 +4824,11 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
       INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
                                                             handle3, iquad, jquad, n_level_gw, &
-                                                            n_level_gw_ref
+                                                            n_level_gw_ref, real_imaginary
       LOGICAL                                            :: my_do_beta
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
-                                                            weight_cos, weight_i, weight_sin, omega_j
+                                                            weight_cos, weight_i, weight_sin, omega_j, omega_diff
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
          vec_Sigma_c_gw_sin_omega, vec_Sigma_c_gw_sin_tau
@@ -4867,21 +4867,27 @@ CONTAINS
 
             DO iquad = 1, num_fit_points
 
-               ! compute Green's function for i*(omega-omega') and store  fm_scaled_dm_occ_tau and fm_scaled_dm_virt_tau
-               CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff, fm_mo_coeff, &
-                                            fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-                                            fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                            eps_filter, e_fermi, stabilize_exp, omega_i-omega_j, count_ev_sc_GW, &
-                                            do_freq=.TRUE., do_time=.FALSE.)
+               omega_diff = tj(iquad) - tj(jquad)
 
-               DO n_level_gw = 1, gw_corr_lev_tot
+               DO real_imaginary = 1, 2
 
-                  CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
-                                      mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
-                                      vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
-                                      vec_Sigma_c_gw_neg_tau(n_level_gw, jquad), &
-                                      do_W_contraction=(iquad==1))
-
+                  ! compute Green's function for i*(omega-omega') and store  fm_scaled_dm_occ_tau and fm_scaled_dm_virt_tau
+                  CALL compute_Greens_function_freq(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff, fm_mo_coeff, &
+                                                    fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
+                                                    fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
+                                                    Eigenval, jquad, nmo, &
+                                                    eps_filter, e_fermi, stabilize_exp, omega_diff, count_ev_sc_GW)
+   
+                  DO n_level_gw = 1, gw_corr_lev_tot
+   
+                     CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
+                                         mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
+                                         vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
+                                         vec_Sigma_c_gw_neg_tau(n_level_gw, jquad), &
+                                         do_W_contraction=(iquad==1))
+   
+   
+                  END DO
 
                END DO
 
@@ -4897,9 +4903,8 @@ CONTAINS
    
             CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                          fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-                                         fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW, &
-                                         do_freq=.FALSE., do_time=.TRUE.)
+                                         fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
+                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW)
 
             CALL dbcsr_set(mat_W, 0.0_dp)
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
@@ -5187,7 +5192,6 @@ CONTAINS
 !> \param fm_scaled_dm_virt_tau ...
 !> \param Eigenval ...
 !> \param jquad ...
-!> \param num_integ_points ...
 !> \param nmo ...
 !> \param eps_filter ...
 !> \param e_fermi ...
@@ -5197,20 +5201,19 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-                                      fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
-                                      eps_filter, e_fermi, stabilize_exp, tau_or_omega, count_ev_sc_GW, do_freq, do_time)
+                                      fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
+                                      eps_filter, e_fermi, stabilize_exp, tau_or_omega, count_ev_sc_GW)
 
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  matrix_s
       TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
          fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
-      INTEGER, INTENT(IN)                                :: jquad, num_integ_points, nmo
+      INTEGER, INTENT(IN)                                :: jquad, nmo
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, stabilize_exp
       REAL(KIND=dp), &
          INTENT(IN)                                      :: tau_or_omega
       INTEGER, INTENT(IN)                                :: count_ev_sc_GW
-      LOGICAL, INTENT(IN) :: do_freq, do_time
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function', &
          routineP = moduleN//':'//routineN
@@ -5220,9 +5223,6 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
 
       CALL timeset(routineN, handle)
-
-      ! either do time or frequency
-      CPASSERT(do_freq .NEQV. do_time)
 
       ! get info of fm_mo_coeff_occ
       CALL cp_fm_get_info(matrix=fm_mo_coeff_occ, &
@@ -5308,6 +5308,116 @@ CONTAINS
       CALL timestop(handle)
 
    END SUBROUTINE compute_Greens_function
+
+   SUBROUTINE compute_Greens_function_freq(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
+                                           fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
+                                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
+                                           eps_filter, e_fermi, stabilize_exp, tau_or_omega, count_ev_sc_GW)
+
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  matrix_s
+      TYPE(dbcsr_type), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt
+      TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
+         fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau
+      REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
+      INTEGER, INTENT(IN)                                :: jquad, nmo
+      REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, stabilize_exp
+      REAL(KIND=dp), &
+         INTENT(IN)                                      :: tau_or_omega
+      INTEGER, INTENT(IN)                                :: count_ev_sc_GW
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function_freq', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, i_global, iiB, iquad, jjB, &
+                                                            ncol_local, nrow_local
+      INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
+
+      CALL timeset(routineN, handle)
+
+      ! get info of fm_mo_coeff_occ
+      CALL cp_fm_get_info(matrix=fm_mo_coeff_occ, &
+                          nrow_local=nrow_local, &
+                          ncol_local=ncol_local, &
+                          row_indices=row_indices, &
+                          col_indices=col_indices)
+
+      ! Multiply the occupied and the virtual MO coefficients with the factor exp((-e_i-e_F)*tau/2).
+      ! Then, we simply get the sum over all occ states and virt. states by a simple matrix-matrix
+      ! multiplication.
+
+      ! first, the occ
+      DO jjB = 1, nrow_local
+         DO iiB = 1, ncol_local
+            i_global = col_indices(iiB)
+
+            IF (ABS(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
+               fm_mo_coeff_occ_scaled%local_data(jjB, iiB) = &
+                  fm_mo_coeff_occ%local_data(jjB, iiB)*EXP(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi))
+            ELSE
+               fm_mo_coeff_occ_scaled%local_data(jjB, iiB) = 0.0_dp
+            END IF
+
+         END DO
+      END DO
+
+      ! the same for virt
+      DO jjB = 1, nrow_local
+         DO iiB = 1, ncol_local
+            i_global = col_indices(iiB)
+
+            IF (ABS(tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi)) < stabilize_exp) THEN
+               fm_mo_coeff_virt_scaled%local_data(jjB, iiB) = &
+                  fm_mo_coeff_virt%local_data(jjB, iiB)*EXP(-tau_or_omega*0.5_dp*(Eigenval(i_global)-e_fermi))
+            ELSE
+               fm_mo_coeff_virt_scaled%local_data(jjB, iiB) = 0.0_dp
+            END IF
+
+         END DO
+      END DO
+
+      CALL cp_gemm(transa="N", transb="T", m=nmo, n=nmo, k=nmo, alpha=1.0_dp, &
+                   matrix_a=fm_mo_coeff_occ_scaled, matrix_b=fm_mo_coeff_occ_scaled, beta=0.0_dp, &
+                   matrix_c=fm_scaled_dm_occ_tau)
+
+      CALL cp_gemm(transa="N", transb="T", m=nmo, n=nmo, k=nmo, alpha=1.0_dp, &
+                   matrix_a=fm_mo_coeff_virt_scaled, matrix_b=fm_mo_coeff_virt_scaled, beta=0.0_dp, &
+                   matrix_c=fm_scaled_dm_virt_tau)
+
+      IF (jquad == 1 .AND. count_ev_sc_GW == 1) THEN
+
+         NULLIFY (mat_greens_fct_occ)
+         CALL dbcsr_init_p(mat_greens_fct_occ)
+         CALL dbcsr_create(matrix=mat_greens_fct_occ, &
+                           template=matrix_s(1)%matrix, &
+                           matrix_type=dbcsr_type_no_symmetry)
+
+         NULLIFY (mat_greens_fct_virt)
+         CALL dbcsr_init_p(mat_greens_fct_virt)
+         CALL dbcsr_create(matrix=mat_greens_fct_virt, &
+                           template=matrix_s(1)%matrix, &
+                           matrix_type=dbcsr_type_no_symmetry)
+
+      END IF
+
+      CALL dbcsr_set(mat_greens_fct_occ, 0.0_dp)
+
+      CALL copy_fm_to_dbcsr(fm_scaled_dm_occ_tau, &
+                            mat_greens_fct_occ, &
+                            keep_sparsity=.FALSE.)
+
+      CALL dbcsr_filter(mat_greens_fct_occ, eps_filter)
+
+      CALL dbcsr_set(mat_greens_fct_virt, 0.0_dp)
+
+      CALL copy_fm_to_dbcsr(fm_scaled_dm_virt_tau, &
+                            mat_greens_fct_virt, &
+                            keep_sparsity=.FALSE.)
+
+      CALL dbcsr_filter(mat_greens_fct_virt, eps_filter)
+
+      CALL timestop(handle)
+
+   END SUBROUTINE compute_Greens_function_freq
 
 END MODULE rpa_gw
 
