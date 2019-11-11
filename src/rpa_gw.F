@@ -4967,14 +4967,14 @@ CONTAINS
    
          END DO
 
+         ! for occupied levels, we need the correlation self-energy for negative omega. Therefore, weight_sin
+         ! should be computed with -omega, which results in an additional minus for vec_Sigma_c_gw_sin_omega:
+         vec_Sigma_c_gw_sin_omega(1:gw_corr_lev_occ, :) = -vec_Sigma_c_gw_sin_omega(1:gw_corr_lev_occ, :)
+   
+         vec_Sigma_c_gw(:, 1:num_fit_points, 1) = vec_Sigma_c_gw_cos_omega(:, 1:num_fit_points)+ &
+                                                  im_unit*vec_Sigma_c_gw_sin_omega(:, 1:num_fit_points)
+
       END IF
-
-      ! for occupied levels, we need the correlation self-energy for negative omega. Therefore, weight_sin
-      ! should be computed with -omega, which results in an additional minus for vec_Sigma_c_gw_sin_omega:
-      vec_Sigma_c_gw_sin_omega(1:gw_corr_lev_occ, :) = -vec_Sigma_c_gw_sin_omega(1:gw_corr_lev_occ, :)
-
-      vec_Sigma_c_gw(:, 1:num_fit_points, 1) = vec_Sigma_c_gw_cos_omega(:, 1:num_fit_points)+ &
-                                               im_unit*vec_Sigma_c_gw_sin_omega(:, 1:num_fit_points)
 
       PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
 
