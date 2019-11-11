@@ -875,8 +875,8 @@ CONTAINS
          my_open_shell = .TRUE.
       END IF
 
-      DEALLOCATE (weights_cos_tf_w_to_t)
-      DEALLOCATE (weights_sin_tf_t_to_w)
+      IF(ALLOCATED(weights_cos_tf_w_to_t)) DEALLOCATE (weights_cos_tf_w_to_t)
+      IF(ALLOCATED(weights_sin_tf_t_to_w)) DEALLOCATE (weights_sin_tf_t_to_w)
 
       IF (.NOT. do_kpoints_cubic_RPA) THEN
          CALL dbcsr_deallocate_matrix_set(mat_3c_overl_int_gw)
@@ -4823,7 +4823,7 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_cubic_gw', &
          routineP = moduleN//':'//routineN
 
-      COMPLEX(KIND=dp)                                   :: im_unit
+      COMPLEX(KIND=dp)                                   :: im_unit, re_im
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
       INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
                                                             handle3, iquad, jquad, n_level_gw, &
@@ -4832,7 +4832,7 @@ CONTAINS
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
                                                             weight_cos, weight_i, weight_sin, omega_j, omega_diff, &
-                                                            Sigma_c_gw_omega_tmp
+                                                            Sigma_c_gw_tmp
 
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
@@ -4893,12 +4893,15 @@ CONTAINS
 
                      CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                          mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
-                                         Sigma_c_gw_omega_tmp, Sigma_c_gw_omega_tmp, &
+                                         Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
                                          do_W_contraction=(iquad==1), &
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
-!                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = 
+                     IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
+                     IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
+
+                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + re_im*Sigma_c_gw_tmp
 
                   END DO
 
