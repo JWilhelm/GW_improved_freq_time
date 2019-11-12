@@ -1505,9 +1505,7 @@ CONTAINS
          mat_3c_overl_int_mao_for_occ_cut, mat_3c_overl_int_mao_for_virt_cut
       TYPE(dbcsr_type), POINTER                          :: mat_contr_gf_occ, mat_contr_gf_virt, &
                                                             mat_contr_W, mat_dm_loc_occ, &
-                                                            mat_dm_loc_virt, mat_work, mat_W, &
-                                                 mat_greens_fct_occ, mat_greens_fct_occ_beta, &
-         mat_greens_fct_virt, mat_greens_fct_virt_beta
+                                                            mat_dm_loc_virt, mat_work, mat_W
       TYPE(integ_mat_buffer_type), ALLOCATABLE, &
          DIMENSION(:)                                    :: buffer_rec, buffer_rec_axk, &
                                                             buffer_rec_beta, buffer_send, &
@@ -2113,13 +2111,13 @@ CONTAINS
                                       fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
                                       mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
                                       mat_3c_overl_int_gw, matrix_berry_im_mo_mo, &
-                                      matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s, &
+                                      matrix_berry_re_mo_mo, mat_W, matrix_s, &
                                       mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, kpoints, mp2_env, qs_env, &
                                       nkp_self_energy, do_kpoints_cubic_RPA, Eigenval_kp, Eigenval_scf_kp, iter_ev_sc, &
                                       vec_Sigma_c_gw_beta, gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
                                       e_fermi_beta, Eigenval_beta, Eigenval_last_beta, Eigenval_scf_beta, &
                                       vec_Sigma_x_gw_beta, ic_corr_list_beta, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, &
-                                      mat_3c_overl_int_gw_beta, mat_greens_fct_occ_beta, mat_greens_fct_virt_beta)
+                                      mat_3c_overl_int_gw_beta)
             ELSE
                CALL GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
@@ -2135,7 +2133,7 @@ CONTAINS
                                       fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
                                       mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
                                       mat_3c_overl_int_gw, matrix_berry_im_mo_mo, &
-                                      matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s, &
+                                      matrix_berry_re_mo_mo, mat_W, matrix_s, &
                                       mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, kpoints, mp2_env, qs_env, &
                                       nkp_self_energy, do_kpoints_cubic_RPA, Eigenval_kp, Eigenval_scf_kp, iter_ev_sc)
             END IF
@@ -2253,17 +2251,16 @@ CONTAINS
          IF (my_do_gw) THEN
             IF (my_open_shell) THEN
                CALL deallocate_matrices_gw_im_time(weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, do_ic_model, &
-                                                   do_kpoints_cubic_RPA, fm_mat_W, mat_3c_overl_int_gw, mat_greens_fct_occ, &
-                                                   mat_greens_fct_virt, mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, &
+                                                   do_kpoints_cubic_RPA, fm_mat_W, mat_3c_overl_int_gw, &
+                                                   mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, &
                                                    mat_W, mat_3c_overl_int, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                                    ikp_local, cfm_mat_W_kp_tau, &
                                                    mat_3c_overl_int_gw_beta, mat_3c_overl_nnP_ic_beta, &
-                                                   mat_3c_overl_nnP_ic_reflected_beta, &
-                                                   mat_greens_fct_occ_beta, mat_greens_fct_virt_beta)
+                                                   mat_3c_overl_nnP_ic_reflected_beta)
             ELSE
                CALL deallocate_matrices_gw_im_time(weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, do_ic_model, &
-                                                   do_kpoints_cubic_RPA, fm_mat_W, mat_3c_overl_int_gw, mat_greens_fct_occ, &
-                                                   mat_greens_fct_virt, mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, &
+                                                   do_kpoints_cubic_RPA, fm_mat_W, mat_3c_overl_int_gw, &
+                                                   mat_3c_overl_nnP_ic, mat_3c_overl_nnP_ic_reflected, &
                                                    mat_W, mat_3c_overl_int, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                                    ikp_local, cfm_mat_W_kp_tau)
             END IF
