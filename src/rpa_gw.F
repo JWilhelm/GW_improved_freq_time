@@ -4834,7 +4834,7 @@ CONTAINS
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
                                                             weight_cos, weight_i, weight_sin, omega_j, omega_diff, &
-                                                            Sigma_c_gw_tmp
+                                                            Sigma_c_gw_tmp, omega_sum
 
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
@@ -4897,6 +4897,7 @@ CONTAINS
             DO iquad = 1, num_fit_points
 
                omega_diff = vec_omega_fit_gw(iquad) - tj(jquad)
+               omega_sum  = vec_omega_fit_gw(iquad) + tj(jquad)
 
                DO real_imaginary = 1, 2
 
@@ -4921,8 +4922,11 @@ CONTAINS
    
                      n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
 
-                     Sigma_c_gw_tmp = 0.0_dp
+                     IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
+                     IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
 
+                     ! contribution from G(i(w-w')) (we need to divide because w' > 0 in the code)
+                     Sigma_c_gw_tmp = 0.0_dp
                      CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                          mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                          Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
@@ -4930,18 +4934,24 @@ CONTAINS
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
-                     IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
-                     IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
-
-!                     IF(n_level_gw==1 .AND. real_imaginary==1) PRINT *, &
-!                          "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
-!                          "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
                      IF(n_level_gw==1 .AND. real_imaginary==1 .AND. iquad < 3) &
                            PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
                                     fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
                                                             re_im*Sigma_c_gw_tmp*wj(jquad)
+
+!                     ! contribution from G(i(w+w')) (we need to divide because w' > 0 in the code)
+!                     Sigma_c_gw_tmp = 0.0_dp
+!                     CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
+!                                         mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
+!                                         Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
+!                                         do_W_contraction=(iquad==1), &
+!                                         do_occ  = (n_level_gw_ref .LE. homo), &
+!                                         do_virt = (n_level_gw_ref > homo) )
+!
+!                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
+!                                                            re_im*Sigma_c_gw_tmp*wj(jquad)
 
                   END DO
 
