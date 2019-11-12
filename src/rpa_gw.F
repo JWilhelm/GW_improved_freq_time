@@ -1026,7 +1026,7 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_global, iiB, iquad, j_global, &
-                                                            jjB, ncol_local, nrow_local
+                                                            jjB, ncol_local, nrow_local, iw
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
       LOGICAL                                            :: my_open_shell
       REAL(KIND=dp)                                      :: tau, weight
@@ -1082,6 +1082,19 @@ CONTAINS
             END DO
          END DO
 
+! BEGIN PRINTING
+         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, omega, fm_mat_Q%local_data(1,1)
+         CALL close_file(iw)
+   
+         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, omega, fm_mat_Q%local_data(1,2)
+         CALL close_file(iw)
+! END PRINTING
+
+
          CALL calc_Sigma_c_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
                             do_periodic, fermi_level_offset, omega, Eigenval, delta_corr, vec_omega_fit_gw, vec_W_gw, &
                             wj, fm_mat_Q, fm_mat_S_gw, fm_mat_S_gw_work)
@@ -1128,6 +1141,18 @@ CONTAINS
 
          ELSE
 
+! BEGIN PRINTING
+         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
+         CALL close_file(iw)
+   
+         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
+         CALL close_file(iw)
+! END PRINTING
+
             ! Fourier transform from w to t
             DO iquad = 1, num_integ_points
    
@@ -1136,9 +1161,7 @@ CONTAINS
                weight = weights_cos_tf_w_to_t(iquad, jquad)*COS(tau*omega)
    
                IF (jquad == 1) THEN
-   
                   CALL cp_fm_set_all(matrix=fm_mat_W(iquad)%matrix, alpha=0.0_dp)
-   
                END IF
    
                CALL cp_fm_scale_and_add(alpha=1.0_dp, matrix_a=fm_mat_W(iquad)%matrix, beta=weight, matrix_b=fm_mat_Q)
@@ -4838,25 +4861,28 @@ CONTAINS
 
       PRINT *, 'fermi_level_offset =', fermi_level_offset
       PRINT *, ''
-      PRINT *, &
-                          "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
-                          "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
+      PRINT *, "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
+               "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
+
+      IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
 ! BEGIN PRINTING
-      CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                     file_position="APPEND")
-      DO jquad = 1, num_integ_points_freq
-        WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,1)
-      END DO
-      CALL close_file(iw)
-
-      CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                     file_position="APPEND")
-      DO jquad = 1, num_integ_points_freq
-        WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,2)
-      END DO
-      CALL close_file(iw)
+         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         DO jquad = 1, num_integ_points_freq
+           WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,1)
+         END DO
+         CALL close_file(iw)
+   
+         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         DO jquad = 1, num_integ_points_freq
+           WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,2)
+         END DO
+         CALL close_file(iw)
 ! END PRINTING
+
+      END IF
 
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
