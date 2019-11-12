@@ -2106,7 +2106,7 @@ CONTAINS
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
-                                      Eigenval_last, Eigenval_scf, tau_tj, tj, &
+                                      Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                       vec_omega_fit_gw, vec_Sigma_x_gw, ic_corr_list, &
                                       weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
@@ -2128,7 +2128,7 @@ CONTAINS
                                       do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
-                                      Eigenval_last, Eigenval_scf, tau_tj, tj, &
+                                      Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                       vec_omega_fit_gw, vec_Sigma_x_gw, ic_corr_list, &
                                       weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &

@@ -9,6 +9,8 @@
 !>      03.2019 created [Frederick Stein]
 ! **************************************************************************************************
 MODULE rpa_gw
+   USE cp_files,                        ONLY: close_file,&
+                                              open_file
    USE basis_set_types,                 ONLY: gto_basis_set_p_type,&
                                               gto_basis_set_type
    USE cell_types,                      ONLY: cell_type,&
@@ -1376,7 +1378,7 @@ CONTAINS
                                 do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                 do_GW_corr, do_gw_im_time_mix_minimax_clenshaw, e_fermi, eps_filter, &
                                 fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
-                                Eigenval_last, Eigenval_scf, tau_tj, tj, &
+                                Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                 vec_omega_fit_gw, vec_Sigma_x_gw, ic_corr_list, &
                                 weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                 fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
@@ -1407,7 +1409,7 @@ CONTAINS
          INTENT(INOUT)                                   :: delta_corr
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: Eigenval
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(INOUT)                                   :: Eigenval_last, Eigenval_scf, tau_tj, tj, &
+         INTENT(INOUT)                                   :: Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                                             vec_omega_fit_gw
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
          INTENT(INOUT)                                   :: vec_Sigma_x_gw
@@ -1478,7 +1480,7 @@ CONTAINS
       IF (do_im_time .AND. .NOT. do_kpoints_cubic_RPA) THEN
          num_points_corr = mp2_env%ri_g0w0%num_omega_points
 
-         CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+         CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, wj, &
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -1496,7 +1498,7 @@ CONTAINS
 
          IF (my_open_shell) THEN
 
-            CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+            CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, wj, &
                                                 mat_greens_fct_occ_beta, mat_greens_fct_virt_beta, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4763,7 +4765,7 @@ CONTAINS
 !> \param vec_Sigma_x_gw ...
 !> \param do_beta ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, wj, &
                                            mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4780,7 +4782,7 @@ CONTAINS
                                              do_GW_corr, do_ri_Sigma_x, vec_Sigma_x_gw, do_beta)
       INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_integ_points_freq
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(IN)                                      :: tau_tj, tj
+         INTENT(IN)                                      :: tau_tj, tj, wj
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          ::  &
                                                             matrix_s
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
@@ -4827,7 +4829,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
       INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
                                                             handle3, iquad, jquad, n_level_gw, &
-                                                            n_level_gw_ref, real_imaginary
+                                                            n_level_gw_ref, real_imaginary, iw
       LOGICAL                                            :: my_do_beta
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
@@ -4864,8 +4866,25 @@ CONTAINS
 
       PRINT *, 'fermi_level_offset =', fermi_level_offset
       PRINT *, ''
-      PRINT *, ''
-      PRINT *, ''
+      PRINT *, &
+                          "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
+                          "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
+
+! BEGIN PRINTING
+      CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                     file_position="APPEND")
+      DO jquad = 1, num_integ_points_freq
+        WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,1)
+      END DO
+      CALL close_file(iw)
+
+      CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                     file_position="APPEND")
+      DO jquad = 1, num_integ_points_freq
+        WRITE (iw, *) jquad, tj(jquad), fm_mat_W(jquad)%matrix%local_data(1,2)
+      END DO
+      CALL close_file(iw)
+! END PRINTING
 
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
@@ -4874,8 +4893,6 @@ CONTAINS
 
             CALL dbcsr_set(mat_W, 0.0_dp)
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
-
-            PRINT *, 'jquad =', jquad, 'fm_mat_W(jquad)%matrix%local_data =', fm_mat_W(jquad)%matrix%local_data(1:10,1:10)
 
             DO iquad = 1, num_fit_points
 
@@ -4892,10 +4909,19 @@ CONTAINS
                                                     fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, fermi_level_offset, &
                                                     iquad*jquad, nmo, homo, eps_filter, omega_diff, count_ev_sc_GW, &
                                                     real_imaginary)
-   
+  
+                  IF(real_imaginary==1) THEN
+                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                                    file_position="APPEND")
+                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
+                     CALL close_file(iw)
+                  END IF
+ 
                   DO n_level_gw = 1, gw_corr_lev_tot
    
                      n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
+
+                     Sigma_c_gw_tmp = 0.0_dp
 
                      CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                          mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
@@ -4907,9 +4933,15 @@ CONTAINS
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
 
-                     IF(n_level_gw==1) PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, Sigma_c_gw_tmp
+!                     IF(n_level_gw==1 .AND. real_imaginary==1) PRINT *, &
+!                          "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
+!                          "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
+                     IF(n_level_gw==1 .AND. real_imaginary==1 .AND. iquad < 3) &
+                           PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
+                                    fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
 
-                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + re_im*Sigma_c_gw_tmp
+                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
+                                                            re_im*Sigma_c_gw_tmp*wj(jquad)
 
                   END DO
 
