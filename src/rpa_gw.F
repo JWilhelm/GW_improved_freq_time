@@ -1082,12 +1082,12 @@ CONTAINS
             END DO
          END DO
 
-         CALL calc_vec_W_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
+         CALL calc_Sigma_c_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
                             do_periodic, fermi_level_offset, omega, Eigenval, delta_corr, vec_omega_fit_gw, vec_W_gw, &
                             wj, fm_mat_Q, fm_mat_S_gw, fm_mat_S_gw_work)
 
          IF (my_open_shell) THEN
-            CALL calc_vec_W_gw(vec_Sigma_c_gw_beta, dimen_nm_gw, dimen_RI, gw_corr_lev_occ_beta, homo_beta, jquad, nmo, &
+            CALL calc_Sigma_c_gw(vec_Sigma_c_gw_beta, dimen_nm_gw, dimen_RI, gw_corr_lev_occ_beta, homo_beta, jquad, nmo, &
                                num_fit_points, do_periodic, fermi_level_offset, omega, Eigenval_beta, delta_corr, &
                                vec_omega_fit_gw, vec_W_gw_beta, wj, fm_mat_Q, fm_mat_S_gw_beta, fm_mat_S_gw_work_beta)
          END IF
@@ -1175,7 +1175,7 @@ CONTAINS
 !> \param fm_mat_S_gw ...
 !> \param fm_mat_S_gw_work ...
 ! **************************************************************************************************
-   SUBROUTINE calc_vec_W_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
+   SUBROUTINE calc_Sigma_c_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
                             do_periodic, fermi_level_offset, omega, Eigenval, delta_corr, vec_omega_fit_gw, vec_W_gw, &
                             wj, fm_mat_Q, fm_mat_S_gw, fm_mat_S_gw_work)
 
@@ -1192,7 +1192,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: wj
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mat_S_gw, fm_mat_S_gw_work
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_vec_W_gw', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_Sigma_c_gw', routineP = moduleN//':'//routineN
       COMPLEX(KIND=dp), PARAMETER                        :: im_unit = (0.0_dp, 1.0_dp)
 
       INTEGER                                            :: handle, iiB, iquad, jjB, m_global, &
@@ -1272,7 +1272,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE calc_vec_W_gw
+   END SUBROUTINE calc_Sigma_c_gw
 
 ! **************************************************************************************************
 !> \brief ...
@@ -4929,7 +4929,7 @@ CONTAINS
 
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
-                                                            re_im*Sigma_c_gw_tmp*weight
+                                                            re_im*Sigma_c_gw_tmp*weight/twopi
 
                   END DO
 
