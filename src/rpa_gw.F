@@ -1154,15 +1154,15 @@ CONTAINS
          ELSE
 
 ! BEGIN PRINTING
-         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                        file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
-         CALL close_file(iw)
-   
-         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                        file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
-         CALL close_file(iw)
+            CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                           file_position="APPEND")
+            WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
+            CALL close_file(iw)
+      
+            CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                           file_position="APPEND")
+            WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
+            CALL close_file(iw)
 ! END PRINTING
 
             ! Fourier transform from w to t
@@ -4951,7 +4951,8 @@ CONTAINS
                      CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                          mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                          Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
-                                         do_W_contraction=(iquad==1), &
+!                                         do_W_contraction=(iquad==1), &
+                                         do_W_contraction=.TRUE., &
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
