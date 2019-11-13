@@ -1026,7 +1026,7 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_global, iiB, iquad, j_global, &
-                                                            jjB, ncol_local, nrow_local, iw
+                                                            jjB, ncol_local, nrow_local, iw, n_level_gw
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
       LOGICAL                                            :: my_open_shell
       REAL(KIND=dp)                                      :: tau, weight
@@ -1085,15 +1085,14 @@ CONTAINS
 ! BEGIN PRINTING
          CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
                         file_position="APPEND")
-         WRITE (iw, *) jquad, omega, fm_mat_Q%local_data(1,1)
+         WRITE (iw, *) jquad, omega, wj(jquad), fm_mat_Q%local_data(1,1)
          CALL close_file(iw)
    
          CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
                         file_position="APPEND")
-         WRITE (iw, *) jquad, omega, fm_mat_Q%local_data(1,2)
+         WRITE (iw, *) jquad, omega, wj(jquad), fm_mat_Q%local_data(1,2)
          CALL close_file(iw)
 ! END PRINTING
-
 
          CALL calc_Sigma_c_gw(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, homo, jquad, nmo, num_fit_points, &
                             do_periodic, fermi_level_offset, omega, Eigenval, delta_corr, vec_omega_fit_gw, vec_W_gw, &
@@ -1130,14 +1129,14 @@ CONTAINS
          END DO
 
 ! BEGIN PRINTING
-         CALL open_file("epsinv_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
                         file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
+         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,1)
          CALL close_file(iw)
 
-         CALL open_file("epsinv_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
                         file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
+         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,2)
          CALL close_file(iw)
 ! END PRINTING
 
@@ -1152,18 +1151,6 @@ CONTAINS
             CALL cp_fm_to_fm(fm_mat_Q, fm_mat_W(jquad)%matrix)
 
          ELSE
-
-! BEGIN PRINTING
-            CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                           file_position="APPEND")
-            WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
-            CALL close_file(iw)
-      
-            CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                           file_position="APPEND")
-            WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
-            CALL close_file(iw)
-! END PRINTING
 
             ! Fourier transform from w to t
             DO iquad = 1, num_integ_points
@@ -1469,7 +1456,7 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: crossing_search, handle, ikp, &
-                                                            max_iter_fit, n_level_gw, num_poles
+                                                            max_iter_fit, n_level_gw, num_poles, jquad
       LOGICAL                                            :: check_fit, my_open_shell, &
                                                             remove_neg_virt_energies
       REAL(KIND=dp)                                      :: stop_crit
@@ -1533,6 +1520,19 @@ CONTAINS
          CALL mp_sum(vec_Sigma_c_gw, para_env%group)
 
       END IF
+
+      DO n_level_gw = 1, 5
+
+        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+
+        DO jquad = 1, num_fit_points
+
+          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+
+        END DO
+
+      END DO
+
 
       IF (do_periodic .AND. mp2_env%ri_g0w0%do_average_deg_levels) THEN
 
@@ -5046,17 +5046,17 @@ CONTAINS
 
       END IF
 
-      DO n_level_gw = 1, gw_corr_lev_tot
-
-        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
-
-        DO jquad = 1, num_fit_points
-
-          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
-
-        END DO
-
-      END DO
+!      DO n_level_gw = 1, gw_corr_lev_tot
+!
+!        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+!
+!        DO jquad = 1, num_fit_points
+!
+!          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+!
+!        END DO
+!
+!      END DO
 
       IF (do_ri_Sigma_x .AND. count_ev_sc_GW == 1) THEN
 
