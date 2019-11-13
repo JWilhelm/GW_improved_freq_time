@@ -4960,12 +4960,13 @@ CONTAINS
                            PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
                                     fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
 
+                     ! divide the integration weight by 2, because the integration 
+                     ! is from -infty to +infty and not just 0 to +infty as for RPA
                      IF(jquad .LE. num_integ_points_freq) THEN
-                        weight = wj(jquad)
+                        weight = wj(jquad)/2.0_dp
                      ELSE
-                        weight = wj(jquad-num_integ_points_freq)
+                        weight = wj(jquad-num_integ_points_freq)/2.0_dp
                      END IF
-
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
                                                             re_im*Sigma_c_gw_tmp*weight/twopi
