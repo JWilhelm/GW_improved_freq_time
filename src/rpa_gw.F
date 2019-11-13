@@ -1129,6 +1129,18 @@ CONTAINS
             END DO
          END DO
 
+! BEGIN PRINTING
+         CALL open_file("epsinv_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,1)
+         CALL close_file(iw)
+
+         CALL open_file("epsinv_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), fm_mat_Q%local_data(1,2)
+         CALL close_file(iw)
+! END PRINTING
+
          ! multiply with L from the left and the right to get the screened Coulomb interaction
          CALL cp_gemm('T', 'N', dimen_RI, dimen_RI, dimen_RI, 1.0_dp, fm_mat_L(1, 1)%matrix, fm_mat_Q, &
                       0.0_dp, fm_mat_work)
