@@ -5507,7 +5507,7 @@ CONTAINS
 
          i_global = col_indices(iiB)
 
-         energy_diff = e_fermi-Eigenval(i_global)
+         energy_diff = Eigenval(i_global)-e_fermi
 
          IF(real_imaginary == 1) THEN
             fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
