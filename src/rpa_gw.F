@@ -4990,8 +4990,6 @@ CONTAINS
                      CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                          mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                          Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
-!                                         do_W_contraction=(iquad==1), &
-                                         do_W_contraction=.TRUE., &
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
@@ -5042,7 +5040,7 @@ CONTAINS
                                    mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
                                    vec_Sigma_c_gw_pos_tau(n_level_gw, jquad), &
                                    vec_Sigma_c_gw_neg_tau(n_level_gw, jquad), &
-                                   do_W_contraction=.TRUE., do_occ=.TRUE., do_virt=.TRUE.)
+                                   do_occ=.TRUE., do_virt=.TRUE.)
    
                n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
    
@@ -5247,7 +5245,7 @@ CONTAINS
 
    SUBROUTINE  dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
                                 mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
-                                vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau, do_W_contraction, &
+                                vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau, &
                                 do_occ, do_virt)
 
       INTEGER, INTENT(IN)                                :: n_level_gw
@@ -5258,7 +5256,7 @@ CONTAINS
       TYPE(dbcsr_p_type)                                 :: mat_SinvVSinv, mat_dm
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_3c_overl_int_gw
       REAL(KIND=dp), INTENT(INOUT) :: vec_Sigma_c_gw_pos_tau, vec_Sigma_c_gw_neg_tau
-      LOGICAL, INTENT(IN) :: do_W_contraction, do_occ, do_virt
+      LOGICAL, INTENT(IN) :: do_occ, do_virt
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_cubic_GW', &
          routineP = moduleN//':'//routineN
@@ -5276,13 +5274,10 @@ CONTAINS
       CALL timeset(routineN, handle)
 
       ! the following formulas are partially taken from Liu et al. PRB 94, 165109 (2016), Eq. (63) - (69)
-
-      IF(do_W_contraction) THEN
-         CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
-         CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
-                             0.0_dp, mat_contr_W)
-         CALL timestop(handle3)
-      END IF
+      CALL timeset(routineN//"_cubic_GW_operation_1", handle3)
+      CALL dbcsr_multiply("N", "N", 1.0_dp, mat_W, mat_3c_overl_int_gw(n_level_gw)%matrix, &
+                          0.0_dp, mat_contr_W)
+      CALL timestop(handle3)
 
       IF(do_virt) THEN
          CALL timeset(routineN//"_cubic_GW_operation_2", handle3)
