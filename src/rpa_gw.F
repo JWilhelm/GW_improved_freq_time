@@ -1241,6 +1241,9 @@ CONTAINS
 
       vec_W_gw = 0.0_dp
 
+      PRINT *, 'fermi_level_offset =', fermi_level_offset, 'e_homo =', Eigenval(homo), &
+               'e_lumo =',  Eigenval(homo+1)
+
       DO iiB = 1, nrow_local
          nm_global = row_indices(iiB)
          DO jjB = 1, ncol_local
@@ -1279,6 +1282,10 @@ CONTAINS
             ELSE
                delta_corr_nn = 0.0_dp
             END IF
+
+            PRINT *, 'e_fermi =', e_fermi,  'Eigenval(m_global) =', Eigenval(m_global), 'omega_diff =', omega+omega_i, &
+                     'Eigenval(n_global) =', Eigenval(n_global), 'is_occ =', n_global <= homo, &
+                     'omega_diff_2 =', -omega+omega_i
 
             ! update the self-energy (use that vec_W_gw(iw) is symmetric), divide the integration
             ! weight by 2, because the integration is from -infty to +infty and not just 0 to +infty
@@ -5437,12 +5444,15 @@ CONTAINS
                           ncol_local=ncol_local, &
                           col_indices=col_indices)
 
+      PRINT *, 'fermi_level_offset =', fermi_level_offset, 'e_homo =', Eigenval(homo), &
+               'e_lumo =',  Eigenval(homo+1)
+
       ! we have two different fermi levels for correcting occupied and virtual energy levels
-      e_fermi = Eigenval(homo) - fermi_level_offset
+      e_fermi = Eigenval(homo) + fermi_level_offset
       CALL scale_mo_coeff(fm_mo_coeff_occ_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
-      e_fermi = Eigenval(homo+1) + fermi_level_offset
+      e_fermi = Eigenval(homo+1) - fermi_level_offset
       CALL scale_mo_coeff(fm_mo_coeff_virt_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
@@ -5516,6 +5526,8 @@ CONTAINS
          i_global = col_indices(iiB)
 
          energy_diff = e_fermi-Eigenval(i_global)
+
+         PRINT *, 'e_fermi =', e_fermi,  'Eigenval(i_global) =', Eigenval(i_global), 'omega_diff =', omega
 
          IF(real_imaginary == 1) THEN
             fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
