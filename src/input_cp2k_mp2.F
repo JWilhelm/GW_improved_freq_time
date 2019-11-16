@@ -945,7 +945,7 @@ CONTAINS
                           enum_i_vals=(/gw_two_pole_model, gw_pade_approx/), &
                           enum_desc=s2a("Use 'two-pole' model.", &
                                         "Use Pade approximation."), &
-                          default_i_val=gw_two_pole_model)
+                          default_i_val=gw_pade_approx)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -975,7 +975,18 @@ CONTAINS
                           "points than minimax points is computationally more expensive, but doesn't affect the "// &
                           "scaling and does improve the accuracy. Putting this parameter in normal N^4-scaling GW "// &
                           "calculation doesn't have any effect.", &
-                          usage="NUM_OMEGA_POINTS_IM_TIME 100", default_i_val=-1)
+                          usage="NUM_FREQ_POINTS_G_AND_W 80", default_i_val=-1)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="NUM_FREQ_POINTS_SIGMA", &
+                          description="If NUM_FREQ_POINTS_G_AND_W > 0, then this keyword is active. This keyword "// &
+                          "determines, how many frequency points in Sigma(iw) are used for the Pade fit. "// &
+                          "More points are more accurate (NUM_FREQ_POINTS_SIGMA > NUM_FREQ_POINTS_G_AND_W isn't "// &
+                          "implemented), but more points means longer execution time. If NUM_FREQ_POINTS_SIGMA < "// &
+                          "NPARAM_PADE, NUM_FREQ_POINTS_SIGMA = NPARAM_PADE is set. NUM_FREQ_POINTS_SIGMA = NPARAM_PADE "// &
+                          "seems to be quite stable and highly efficient. ", &
+                          usage="NUM_FREQ_POINTS_SIGMA 20", default_i_val=50)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

@@ -1727,6 +1727,7 @@ CONTAINS
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
                                       first_cycle_periodic_correction, do_GW_corr, &
+                                      do_gw_im_time_mix_minimax_clenshaw, &
                                       a_scaling, Eigenval, tj, vec_omega_fit_gw, vec_Sigma_x_gw, &
                                       delta_corr, Eigenval_last, Eigenval_scf, vec_W_gw, &
                                       fm_mat_S_gw, fm_mat_S_gw_work, &
@@ -1742,6 +1743,7 @@ CONTAINS
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
                                       first_cycle_periodic_correction, do_GW_corr, &
+                                      do_gw_im_time_mix_minimax_clenshaw, &
                                       a_scaling, Eigenval, tj, vec_omega_fit_gw, vec_Sigma_x_gw, &
                                       delta_corr, Eigenval_last, Eigenval_scf, vec_W_gw, &
                                       fm_mat_S_gw, fm_mat_S_gw_work, &
