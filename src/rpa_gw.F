@@ -1521,17 +1521,17 @@ CONTAINS
 
       END IF
 
-      DO n_level_gw = 1, 5
-
-        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
-
-        DO jquad = 1, num_fit_points
-
-          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
-
-        END DO
-
-      END DO
+!      DO n_level_gw = 1, 5
+!
+!        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+!
+!        DO jquad = 1, num_fit_points
+!
+!          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+!
+!        END DO
+!
+!      END DO
 
 
       IF (do_periodic .AND. mp2_env%ri_g0w0%do_average_deg_levels) THEN

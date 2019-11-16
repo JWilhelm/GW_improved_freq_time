@@ -2092,8 +2092,6 @@ CONTAINS
 
          END IF
 
-         PRINT *, 'num_fit_points =', num_fit_points
-
          ! G0W0 postprocessing: Fitting + correction of MO energies
          IF (my_do_gw) THEN
             IF (my_open_shell) THEN

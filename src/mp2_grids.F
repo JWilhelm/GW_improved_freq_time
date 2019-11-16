@@ -245,17 +245,6 @@ CONTAINS
             CALL get_l_sq_wghts_cos_tf_t_to_w(num_freq_points, num_time_points, tau_tj, weights_cos_tf_t_to_w, tj, &
                                               Emin, Emax, max_error_min, num_points_per_magnitude)
 
-            PRINT *, 'jquad, omega, weight'
-            IF(my_do_mixed_minimax_clenshaw) THEN
-              DO jquad = 1, num_freq_points
-                  PRINT *, num_freq_points+1-jquad, tj( num_freq_points+1-jquad), wj(num_freq_points+1-jquad)
-              END DO
-            ELSE
-              DO jquad = 1, num_freq_points
-                  PRINT *, jquad, tj(jquad),  wj(jquad)
-              END DO
-            END IF
-
             IF (do_gw_im_time .AND. (.NOT. my_do_mixed_minimax_clenshaw)) THEN
 
                CPASSERT(num_freq_points == num_time_points)
