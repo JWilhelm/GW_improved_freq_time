@@ -1606,7 +1606,8 @@ CONTAINS
                                                mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                                Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, num_poles, &
                                                num_fit_points, max_iter_fit, crossing_search, homo, check_fit, stop_crit, &
-                                               fermi_level_offset, do_im_time)
+                                               fermi_level_offset, &
+                                               do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
             CASE (gw_pade_approx)
 
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
@@ -1614,7 +1615,8 @@ CONTAINS
                                       mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                       Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, mp2_env%ri_g0w0%nparam_pade, &
                                       num_fit_points, crossing_search, homo, check_fit, &
-                                      fermi_level_offset, do_im_time)
+                                      fermi_level_offset, &
+                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
 
             CASE DEFAULT
                CPABORT("Only two-model and Pade approximation are implemented.")
@@ -1630,7 +1632,8 @@ CONTAINS
                      Eigenval_beta, Eigenval_scf_beta, n_level_gw, &
                      gw_corr_lev_occ_beta, num_poles, &
                      num_fit_points, max_iter_fit, crossing_search, homo_beta, check_fit, stop_crit, &
-                     fermi_level_offset, do_im_time)
+                     fermi_level_offset, &
+                     do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
                CASE (gw_pade_approx)
                   CALL continuation_pade(vec_gw_energ_beta, vec_omega_fit_gw, &
                                          z_value_beta, m_value_beta, vec_Sigma_c_gw_beta(:, :, ikp), &
@@ -1638,7 +1641,8 @@ CONTAINS
                                          Eigenval_beta, Eigenval_scf_beta, n_level_gw, &
                                          gw_corr_lev_occ_beta, mp2_env%ri_g0w0%nparam_pade, &
                                          num_fit_points, crossing_search, homo_beta, check_fit, &
-                                         fermi_level_offset, do_im_time)
+                                         fermi_level_offset, &
+                                         do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
                CASE DEFAULT
                   CPABORT("Only two-model and Pade approximation are implemented.")
                END SELECT
