@@ -4956,9 +4956,9 @@ CONTAINS
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
-                     IF(n_level_gw==1 .AND. real_imaginary==1 .AND. iquad < 3 .AND. jquad .LE. num_integ_points_freq) &
-                           PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
-                                    fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
+!                     IF(n_level_gw==1 .AND. real_imaginary==1 .AND. iquad < 3 .AND. jquad .LE. num_integ_points_freq) &
+!                           PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
+!                                    fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
 
                      ! divide the integration weight by 2, because the integration
                      ! is from -infty to +infty and not just 0 to +infty as for RPA
@@ -4968,8 +4968,8 @@ CONTAINS
                         weight = wj(jquad-num_integ_points_freq)/2.0_dp
                      END IF
 
-                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) + &
-                                                            re_im*Sigma_c_gw_tmp*weight/twopi
+                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
+                                                            weight/twopi*re_im*Sigma_c_gw_tmp
 
                   END DO
 
@@ -5047,17 +5047,21 @@ CONTAINS
 
       END IF
 
-!      DO n_level_gw = 1, gw_corr_lev_tot
-!
-!        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
-!
-!        DO jquad = 1, num_fit_points
-!
-!          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
-!
-!        END DO
-!
-!      END DO
+      PRINT *, ''
+      PRINT *, 'CHECK FOR LOW-SCALING GW ALSO SIGMA INSIDE THE ROUTINE'
+      PRINT *, ''
+
+      DO n_level_gw = 1, gw_corr_lev_tot
+
+        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+
+        DO jquad = 1, num_fit_points
+
+          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+
+        END DO
+
+      END DO
 
       IF (do_ri_Sigma_x .AND. count_ev_sc_GW == 1) THEN
 
