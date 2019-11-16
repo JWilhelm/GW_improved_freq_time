@@ -4840,7 +4840,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
       INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
                                                             handle3, iquad, jquad, n_level_gw, &
-                                                            n_level_gw_ref, real_imaginary, iw
+                                                            n_level_gw_ref, real_imaginary, iw, n_1, n
       LOGICAL                                            :: my_do_beta
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
@@ -4974,6 +4974,11 @@ CONTAINS
 
          END DO
 
+         ! empircally found that the sign of real part of self-energy for occupied levels 
+         ! is wrong when comparing to N^4 code...
+         n = gw_corr_lev_occ
+         vec_Sigma_c_gw(1:n,:,:) = - REAL(vec_Sigma_c_gw(1:n,:,:))*(1.0_dp, 0.0_dp)  &
+                                   + AIMAG(vec_Sigma_c_gw(1:n,:,:))*(0.0_dp, 1.0_dp)
       ELSE
 
          DO jquad = 1, num_integ_points
@@ -5511,7 +5516,7 @@ CONTAINS
 
          i_global = col_indices(iiB)
 
-         energy_diff = Eigenval(i_global)-e_fermi
+         energy_diff = e_fermi - Eigenval(i_global)
 
          IF(real_imaginary == 1) THEN
             fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
