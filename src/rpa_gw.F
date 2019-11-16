@@ -1241,9 +1241,6 @@ CONTAINS
 
       vec_W_gw = 0.0_dp
 
-      PRINT *, 'fermi_level_offset =', fermi_level_offset, 'e_homo =', Eigenval(homo), &
-               'e_lumo =',  Eigenval(homo+1)
-
       DO iiB = 1, nrow_local
          nm_global = row_indices(iiB)
          DO jjB = 1, ncol_local
@@ -1282,10 +1279,6 @@ CONTAINS
             ELSE
                delta_corr_nn = 0.0_dp
             END IF
-
-            PRINT *, 'e_fermi =', e_fermi,  'Eigenval(m_global) =', Eigenval(m_global), 'omega_diff =', omega+omega_i, &
-                     'Eigenval(n_global) =', Eigenval(n_global), 'is_occ =', n_global <= homo, &
-                     'omega_diff_2 =', -omega+omega_i
 
             ! update the self-energy (use that vec_W_gw(iw) is symmetric), divide the integration
             ! weight by 2, because the integration is from -infty to +infty and not just 0 to +infty
@@ -4878,11 +4871,6 @@ CONTAINS
       ALLOCATE (delta_corr_omega(1+homo-gw_corr_lev_occ:homo+gw_corr_lev_virt, num_integ_points))
       delta_corr_omega(:, :) = (0.0_dp, 0.0_dp)
 
-      PRINT *, 'fermi_level_offset =', fermi_level_offset
-      PRINT *, ''
-      PRINT *, "jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, ", &
-               "fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp"
-
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
 ! BEGIN PRINTING
@@ -4963,10 +4951,6 @@ CONTAINS
                                          do_occ  = (n_level_gw_ref .LE. homo), &
                                          do_virt = (n_level_gw_ref > homo) )
 
-!                     IF(n_level_gw==1 .AND. real_imaginary==1 .AND. iquad < 3 .AND. jquad .LE. num_integ_points_freq) &
-!                           PRINT *, jquad, tj(jquad), vec_omega_fit_gw(iquad), iquad, omega_diff, &
-!                                    fm_scaled_dm_occ_tau%local_data(1,1), Sigma_c_gw_tmp
-
                      ! divide the integration weight by 2, because the integration
                      ! is from -infty to +infty and not just 0 to +infty as for RPA
                      IF(jquad .LE. num_integ_points_freq) THEN
@@ -4992,10 +4976,11 @@ CONTAINS
    
             tau = tau_tj(jquad)
    
-            CALL compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
-                                         fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-                                         fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
-                                         eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW)
+            CALL compute_Greens_function_time(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, &
+                                              fm_mo_coeff_occ, fm_mo_coeff_virt, &
+                                              fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
+                                              fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
+                                              eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW)
 
             CALL dbcsr_set(mat_W, 0.0_dp)
             CALL copy_fm_to_dbcsr(fm_mat_W(jquad)%matrix, mat_W, keep_sparsity=.FALSE.)
@@ -5054,21 +5039,21 @@ CONTAINS
 
       END IF
 
-      PRINT *, ''
-      PRINT *, 'CHECK FOR LOW-SCALING GW ALSO SIGMA INSIDE THE ROUTINE'
-      PRINT *, ''
-
-      DO n_level_gw = 1, gw_corr_lev_tot
-
-        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
-
-        DO jquad = 1, num_fit_points
-
-          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
-
-        END DO
-
-      END DO
+!      PRINT *, ''
+!      PRINT *, 'CHECK FOR LOW-SCALING GW ALSO SIGMA INSIDE THE ROUTINE'
+!      PRINT *, ''
+!
+!      DO n_level_gw = 1, gw_corr_lev_tot
+!
+!        PRINT *, 'vec_Sigma_c_gw of level =', n_level_gw
+!
+!        DO jquad = 1, num_fit_points
+!
+!          PRINT *, vec_omega_fit_gw(jquad), vec_Sigma_c_gw(n_level_gw, jquad, 1)
+!
+!        END DO
+!
+!      END DO
 
       IF (do_ri_Sigma_x .AND. count_ev_sc_GW == 1) THEN
 
@@ -5302,7 +5287,7 @@ CONTAINS
 !> \param tau_tj ...
 !> \param count_ev_sc_GW ...
 ! **************************************************************************************************
-   SUBROUTINE compute_Greens_function(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
+   SUBROUTINE compute_Greens_function_time(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                       fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
                                       eps_filter, e_fermi, stabilize_exp, tau, count_ev_sc_GW)
@@ -5318,7 +5303,7 @@ CONTAINS
          INTENT(IN)                                      :: tau
       INTEGER, INTENT(IN)                                :: count_ev_sc_GW
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function_time', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_global, iiB, iquad, jjB, &
@@ -5410,7 +5395,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE compute_Greens_function
+   END SUBROUTINE compute_Greens_function_time
 
    SUBROUTINE compute_Greens_function_freq(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff, &
                                            fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -5443,9 +5428,6 @@ CONTAINS
                           nrow_local=nrow_local, &
                           ncol_local=ncol_local, &
                           col_indices=col_indices)
-
-      PRINT *, 'fermi_level_offset =', fermi_level_offset, 'e_homo =', Eigenval(homo), &
-               'e_lumo =',  Eigenval(homo+1)
 
       ! we have two different fermi levels for correcting occupied and virtual energy levels
       e_fermi = Eigenval(homo) + fermi_level_offset
@@ -5526,8 +5508,6 @@ CONTAINS
          i_global = col_indices(iiB)
 
          energy_diff = e_fermi-Eigenval(i_global)
-
-         PRINT *, 'e_fermi =', e_fermi,  'Eigenval(i_global) =', Eigenval(i_global), 'omega_diff =', omega
 
          IF(real_imaginary == 1) THEN
             fm_mo_coeff_scaled%local_data(:, iiB) = fm_mo_coeff%local_data(:, iiB)*&
