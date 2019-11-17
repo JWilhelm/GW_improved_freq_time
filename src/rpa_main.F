@@ -319,10 +319,12 @@ CONTAINS
             IF(do_gw_im_time_mix_minimax_clenshaw) THEN
               ! we only do minimax for the time grid, where Braess & Hackbusch parameters are available 
               ! up to 53 time points.
-              CALL cp_warn(__LOCATION__, &
-                           "The required number of quadrature point exceeds the maximum possible in the "// &
-                           "Minimax quadrature scheme. The number of quadrature point has been reset to 53.")
-              num_integ_points = 53
+              IF(num_integ_points > 53) THEN
+                 CALL cp_warn(__LOCATION__, &
+                              "The required number of quadrature point exceeds the maximum possible in the "// &
+                              "Minimax quadrature scheme. The number of quadrature point has been reset to 53.")
+                 num_integ_points = 53
+              END IF
             ELSE
                ! for normal minimax grids, we the minimax parameters only have been generated for up to 20 points
                CALL cp_warn(__LOCATION__, &
