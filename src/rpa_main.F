@@ -243,7 +243,7 @@ CONTAINS
       INTEGER(KIND=int_8)                                :: mem
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: sub_proc_map
       LOGICAL                                            :: do_minimax_quad, my_open_shell, &
-                                                            skip_integ_group_opt
+                                                            skip_integ_group_opt, do_gw_im_time_mix_minimax_clenshaw
       REAL(KIND=dp) :: allowed_memory, avail_mem, E_Range, Emax, Emax_beta, Emin, Emin_beta, &
          mem_for_iaK, mem_for_QK, mem_min, mem_per_group, mem_real, needed_mem
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: BIb_C_2D, BIb_C_2D_beta, &
@@ -313,11 +313,23 @@ CONTAINS
          num_integ_points = mp2_env%ri_rpa%rpa_num_quad_points
          input_integ_group_size = mp2_env%ri_rpa%rpa_integ_group_size
          do_minimax_quad = mp2_env%ri_rpa%minimax_quad
+         do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%num_integ_points_freq > num_integ_points
+
          IF (do_minimax_quad .AND. num_integ_points > 20) THEN
-            CALL cp_warn(__LOCATION__, &
+            IF(do_gw_im_time_mix_minimax_clenshaw) THEN
+              ! we only do minimax for the time grid, where Braess & Hackbusch parameters are available 
+              ! up to 53 time points.
+              CALL cp_warn(__LOCATION__, &
+                           "The required number of quadrature point exceeds the maximum possible in the "// &
+                           "Minimax quadrature scheme. The number of quadrature point has been reset to 53.")
+              num_integ_points = 53
+            ELSE
+               ! for normal minimax grids, we the minimax parameters only have been generated for up to 20 points
+               CALL cp_warn(__LOCATION__, &
                          "The required number of quadrature point exceeds the maximum possible in the "// &
                          "Minimax quadrature scheme. The number of quadrature point has been reset to 20.")
             num_integ_points = 20
+            END IF
          END IF
       END IF
       allowed_memory = mp2_env%mp2_memory
@@ -668,8 +680,8 @@ CONTAINS
                           fm_mat_S, fm_mat_Q_gemm, fm_mat_Q, fm_mat_S_gw, fm_mat_R_gw, &
                           fm_mat_S_ij_bse, fm_mat_S_ij_bse, &
                           my_do_gw, do_bse, gw_corr_lev_occ, gw_corr_lev_virt, &
-                          do_minimax_quad, &
-                          do_im_time, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
+                          do_minimax_quad, do_im_time, do_mao, do_gw_im_time_mix_minimax_clenshaw, &
+                          fm_mo_coeff_occ, fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
                           mat_munu, mat_dm_occ_local, mat_dm_virt_local, mat_P_local, mat_P_global, mat_M, &
                           mat_3c_overl_int, mat_3c_overl_int_mao_for_occ, mat_3c_overl_int_mao_for_virt, &
@@ -692,8 +704,8 @@ CONTAINS
                           fm_mat_S, fm_mat_Q_gemm, fm_mat_Q, fm_mat_S_gw, fm_mat_R_gw, &
                           fm_mat_S_ij_bse, fm_mat_S_ab_bse, &
                           my_do_gw, do_bse, gw_corr_lev_occ, gw_corr_lev_virt, &
-                          do_minimax_quad, &
-                          do_im_time, do_mao, fm_mo_coeff_occ, fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
+                          do_minimax_quad, do_im_time, do_mao, do_gw_im_time_mix_minimax_clenshaw, &
+                          fm_mo_coeff_occ, fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
                           mat_munu, mat_dm_occ_local, mat_dm_virt_local, mat_P_local, mat_P_global, mat_M, &
                           mat_3c_overl_int, mat_3c_overl_int_mao_for_occ, mat_3c_overl_int_mao_for_virt, &
@@ -1378,8 +1390,8 @@ CONTAINS
                           fm_mat_S, fm_mat_Q_gemm, fm_mat_Q, fm_mat_S_gw, fm_mat_R_gw, &
                           fm_mat_S_ij_bse, fm_mat_S_ab_bse, &
                           my_do_gw, do_bse, gw_corr_lev_occ, gw_corr_lev_virt, &
-                          do_minimax_quad, do_im_time, do_mao, fm_mo_coeff_occ, &
-                          fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
+                          do_minimax_quad, do_im_time, do_mao, do_gw_im_time_mix_minimax_clenshaw, &
+                          fm_mo_coeff_occ, fm_mo_coeff_virt, mo_coeff, fm_matrix_L_RI_metric, &
                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, mat_munu, mat_dm_occ_local, &
                           mat_dm_virt_local, mat_P_local, &
                           mat_P_global, mat_M, mat_3c_overl_int, mat_3c_overl_int_mao_for_occ, &
@@ -1407,7 +1419,8 @@ CONTAINS
                                                             fm_mat_S_ij_bse, fm_mat_S_ab_bse
       LOGICAL, INTENT(IN)                                :: my_do_gw, do_bse
       INTEGER, INTENT(IN)                                :: gw_corr_lev_occ, gw_corr_lev_virt
-      LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_im_time, do_mao
+      LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_im_time, do_mao, &
+                                                            do_gw_im_time_mix_minimax_clenshaw
       TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                                             mo_coeff
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_matrix_L_RI_metric
@@ -1465,7 +1478,7 @@ CONTAINS
          starts_array_cm, starts_array_cm_mao_occ, starts_array_cm_mao_virt
       LOGICAL :: do_apply_ic_corr_to_gw, do_gw_im_time, do_ic_model, do_ic_opt_homo_lumo, &
          do_kpoints_cubic_RPA, do_kpoints_from_Gamma, do_periodic, do_ri_Sigma_x, first_cycle, &
-         first_cycle_periodic_correction, my_open_shell, print_ic_values, do_gw_im_time_mix_minimax_clenshaw
+         first_cycle_periodic_correction, my_open_shell, print_ic_values
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: do_GW_corr
       LOGICAL, ALLOCATABLE, DIMENSION(:, :, :)           :: cycle_due_to_sparse_dm, &
                                                             multiply_needed_occ, &
@@ -1536,7 +1549,6 @@ CONTAINS
       ic_corr_list_beta => mp2_env%ri_g0w0%ic_corr_list_beta
       do_kpoints_cubic_RPA = mp2_env%ri_rpa_im_time%do_im_time_kpoints
       do_kpoints_from_Gamma = SUM(mp2_env%ri_rpa_im_time%kp_grid) > 0
-      do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%num_integ_points_freq > num_integ_points
       num_integ_points_freq = num_integ_points
 
       ! For SOS-MP2 only gemm is implemented
