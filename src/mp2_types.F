@@ -156,7 +156,7 @@ MODULE mp2_types
       LOGICAL                  :: do_ic_model, print_ic_values
       REAL(KIND=dp)            :: eps_dist
       REAL(KIND=dp), DIMENSION(:), POINTER               :: ic_corr_list, ic_corr_list_beta
-      INTEGER :: print_exx
+      INTEGER :: print_exx, num_integ_points_freq, num_freq_points_sigma
       LOGICAL :: do_gamma_only_sigma
    END TYPE
 
