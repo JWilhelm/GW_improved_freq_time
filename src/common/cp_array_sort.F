@@ -1,16 +1,16 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2019  CP2K developers group                                               !
+!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
 !> \brief Routine for sorting an array
 !> \note
 !>      CP2K:
-!>      Please use the interface definded in util.F for calling sort().
+!>      Please use the interface defined in util.F for calling sort().
 !>
 !>      DBCSR:
-!>      Please use the interface definded in dbcsr_toollib.F for calling sort().
+!>      Please use the interface defined in dbcsr_toollib.F for calling sort().
 !> \par History
 !>      12.2012 first version [ole]
 !> \author Ole Schuett

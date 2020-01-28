@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_NAME")" && pwd -P)"
 
 # +-----------------------------------------------------------------------+
 # |  CP2K: A general program to perform molecular dynamics simulations    |
-# |  Copyright (C) 2000 - 2019  CP2K developers group                     |
+# |  Copyright (C) 2000 - 2020  CP2K developers group                     |
 # +-----------------------------------------------------------------------+
 #
 # *****************************************************************************
@@ -104,7 +104,7 @@ OPTIONS:
 
 The --enable-FEATURE options follow the rules:
   --enable-FEATURE=yes    Enable this particular feature
-  --enable-FEATHRE=no     Disable this particular feature
+  --enable-FEATURE=no     Disable this particular feature
   --enable-FEATURE        The option keyword alone is equivalent to
                           --enable-FEATURE=yes
 
@@ -259,7 +259,7 @@ EOF
 # PACKAGE LIST: register all new dependent tools and libs here. Order
 # is important, the first in the list gets installed first
 # ------------------------------------------------------------------------
-tool_list="valgrind cmake gcc"
+tool_list="gcc cmake valgrind"
 mpi_list="mpich openmpi"
 math_list="mkl acml openblas reflapack"
 lib_list="fftw libint libxc libsmm libxsmm scalapack elpa plumed \
@@ -297,7 +297,7 @@ fi
 with_acml=__SYSTEM__
 with_mkl=__SYSTEM__
 with_openblas=__INSTALL__
-with_reflapack=__INSTALL__
+with_reflapack=__DONTUSE__
 
 # sirius is activated by default
 with_sirius="__INSTALL__"
@@ -921,10 +921,10 @@ done
 if [ "$dry_run" == "__TRUE__" ] ; then
     echo "Wrote only configuration files (--dry-run)."
 else
-    ./scripts/install_valgrind.sh
-    ./scripts/install_cmake.sh
     ./scripts/install_gcc.sh
     ./scripts/setup_buildtools.sh
+    ./scripts/install_cmake.sh
+    ./scripts/install_valgrind.sh
     ./scripts/install_mpich.sh
     ./scripts/install_openmpi.sh
     ./scripts/install_mathlibs.sh

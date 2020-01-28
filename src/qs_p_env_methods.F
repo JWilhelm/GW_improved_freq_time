@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2019  CP2K developers group                                               !
+!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -12,6 +12,7 @@
 !>      22-08-2002, TCH, started development
 ! **************************************************************************************************
 MODULE qs_p_env_methods
+   USE atomic_kind_types,               ONLY: atomic_kind_type
    USE cp_blacs_env,                    ONLY: cp_blacs_env_type
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: cp_dbcsr_plus_fm_fm_t,&
@@ -61,9 +62,11 @@ MODULE qs_p_env_methods
                                               section_vals_type
    USE kinds,                           ONLY: dp
    USE preconditioner_types,            ONLY: init_preconditioner
+   USE pw_env_types,                    ONLY: pw_env_type
    USE qs_energy_types,                 ONLY: qs_energy_type
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_environment_type
+   USE qs_kind_types,                   ONLY: qs_kind_type
    USE qs_kpp1_env_methods,             ONLY: kpp1_calc_k_p_p1,&
                                               kpp1_calc_k_p_p1_fdiff,&
                                               kpp1_create,&
@@ -78,6 +81,7 @@ MODULE qs_p_env_methods
    USE qs_mo_types,                     ONLY: get_mo_set,&
                                               mo_set_p_type
    USE qs_p_env_types,                  ONLY: qs_p_env_type
+   USE qs_rho0_ggrid,                   ONLY: rho0_s_grid_create
    USE qs_rho0_methods,                 ONLY: init_rho0
    USE qs_rho_atom_methods,             ONLY: allocate_rho_atom_internals
    USE qs_rho_methods,                  ONLY: qs_rho_rebuild,&
@@ -130,12 +134,15 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'p_env_create', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, n_ao, n_mo, n_spins, natom, spin
+      TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
       TYPE(cp_fm_pool_p_type), DIMENSION(:), POINTER     :: ao_mo_fm_pools, mo_mo_fm_pools
       TYPE(cp_fm_type), POINTER                          :: qs_env_c
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
       TYPE(dft_control_type), POINTER                    :: dft_control
+      TYPE(pw_env_type), POINTER                         :: pw_env
+      TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
 
 ! code
 
@@ -152,6 +159,7 @@ CONTAINS
       ALLOCATE (p_env)
       NULLIFY (p_env%kpp1, &
                p_env%p1, &
+               p_env%w1, &
                p_env%m_epsilon, &
                p_env%psi0d, &
                p_env%S_psi0, &
@@ -166,7 +174,7 @@ CONTAINS
                p_env%ev_h0)
 
       p_env%ref_count = 1
-      last_p_env_id = last_p_env_id+1
+      last_p_env_id = last_p_env_id + 1
       p_env%id_nr = last_p_env_id
       p_env%iter = 0
 
@@ -254,12 +262,19 @@ CONTAINS
       ! GAPW initializations !
       !----------------------!
       IF (dft_control%qs_control%gapw) THEN
+         CALL get_qs_env(qs_env, &
+                         atomic_kind_set=atomic_kind_set, &
+                         natom=natom, &
+                         pw_env=pw_env, &
+                         qs_kind_set=qs_kind_set)
+
          CALL local_rho_set_create(p_env%local_rho_set)
-         CALL allocate_rho_atom_internals(qs_env, p_env%local_rho_set%rho_atom_set)
-         CALL init_rho0(qs_env, dft_control%qs_control%gapw_control, &
-                        .TRUE., p_env%local_rho_set)
+         CALL allocate_rho_atom_internals(p_env%local_rho_set%rho_atom_set, atomic_kind_set, &
+                                          qs_kind_set, dft_control, para_env)
+
+         CALL init_rho0(p_env%local_rho_set, qs_env, dft_control%qs_control%gapw_control, .TRUE.)
+         CALL rho0_s_grid_create(pw_env, p_env%local_rho_set%rho0_mpole)
          CALL hartree_local_create(p_env%hartree_local)
-         CALL get_qs_env(qs_env=qs_env, natom=natom)
          CALL init_coulomb_local(p_env%hartree_local, natom)
       END IF
 
@@ -407,7 +422,7 @@ CONTAINS
       CALL qs_rho_get(rho, rho_ao=rho_ao)
 
       n_spins = dft_control%nspins
-      p_env%iter = p_env%iter+1
+      p_env%iter = p_env%iter + 1
       CALL mpools_get(qs_env%mpools, &
                       ao_mo_fm_pools=ao_mo_fm_pools)
       ! def my_psi0
@@ -715,7 +730,7 @@ CONTAINS
       my_beta = 0.0_dp
       IF (PRESENT(beta)) my_beta = beta
 
-      iter = iter+1
+      iter = iter + 1
 
       CPASSERT(ASSOCIATED(p_env))
       CPASSERT(p_env%ref_count > 0)
@@ -730,7 +745,12 @@ CONTAINS
             CALL dbcsr_copy(rho1_ao(ispin)%matrix, p1(ispin)%matrix)
          ENDIF
       ENDDO
-      CALL qs_rho_update_rho(rho_struct=p_env%rho1, qs_env=qs_env)
+
+      IF (ASSOCIATED(p_env%local_rho_set)) THEN
+         CALL qs_rho_update_rho(rho_struct=p_env%rho1, qs_env=qs_env, local_rho_set=p_env%local_rho_set)
+      ELSE
+         CALL qs_rho_update_rho(rho_struct=p_env%rho1, qs_env=qs_env)
+      END IF
 
       IF (fdiff) THEN
          CALL kpp1_calc_k_p_p1_fdiff(qs_env=qs_env, &

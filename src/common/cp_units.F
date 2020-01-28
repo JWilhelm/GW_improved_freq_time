@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2019  CP2K developers group                                               !
+!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -169,6 +169,7 @@ CONTAINS
 
       CHARACTER(default_string_length)                   :: desc
       CHARACTER(LEN=40)                                  :: formatstr
+      CHARACTER(LEN=LEN(string))                         :: unit_string
       INTEGER                                            :: i_high, i_low, i_unit, len_string, &
                                                             next_power
       INTEGER, DIMENSION(cp_unit_max_kinds)              :: kind_id, power, unit_id
@@ -183,213 +184,215 @@ CONTAINS
       next_power = 1
       DO WHILE (i_low < len_string)
          IF (string(i_low:i_low) /= ' ') EXIT
-         i_low = i_low+1
+         i_low = i_low + 1
       END DO
       i_high = i_low
       DO WHILE (i_high <= len_string)
          IF (string(i_high:i_high) == ' ' .OR. string(i_high:i_high) == '^' .OR. &
              string(i_high:i_high) == '*' .OR. string(i_high:i_high) == '/') EXIT
-         i_high = i_high+1
+         i_high = i_high + 1
       END DO
       DO
          IF (i_high <= i_low .OR. i_low > len_string) EXIT
-         i_unit = i_unit+1
+         i_unit = i_unit + 1
          IF (i_unit > cp_unit_max_kinds) THEN
             CPABORT("Maximum number of combined units exceeded")
             EXIT
          END IF
          ! read unit
-         SELECT CASE (string (i_low:i_high-1))
-         CASE ("internal_cp2k")
+         unit_string = string(i_low:i_high - 1)
+         CALL uppercase(unit_string)
+         SELECT CASE (TRIM(unit_string))
+         CASE ("INTERNAL_CP2K")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_undef
-         CASE ("hartree")
+         CASE ("HARTREE")
             unit_id(i_unit) = cp_units_hartree
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("au_e")
+         CASE ("AU_E")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("wavenumber_e")
+         CASE ("WAVENUMBER_E")
             unit_id(i_unit) = cp_units_wavenum
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("joule", "J")
+         CASE ("JOULE", "J")
             unit_id(i_unit) = cp_units_joule
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("kcalmol")
+         CASE ("KCALMOL")
             unit_id(i_unit) = cp_units_kcalmol
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("kjmol")
+         CASE ("KJMOL")
             unit_id(i_unit) = cp_units_kjmol
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("jmol")
+         CASE ("JMOL")
             unit_id(i_unit) = cp_units_jmol
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("Ry")
+         CASE ("RY")
             unit_id(i_unit) = cp_units_Ry
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("eV")
+         CASE ("EV")
             unit_id(i_unit) = cp_units_eV
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("keV")
+         CASE ("KEV")
             unit_id(i_unit) = cp_units_keV
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("K_e")
+         CASE ("K_E")
             unit_id(i_unit) = cp_units_k
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("energy")
+         CASE ("ENERGY")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_energy
-         CASE ("au_l")
+         CASE ("AU_L")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_length
-         CASE ("bohr")
+         CASE ("BOHR")
             unit_id(i_unit) = cp_units_bohr
             kind_id(i_unit) = cp_ukind_length
-         CASE ("m")
+         CASE ("M")
             unit_id(i_unit) = cp_units_m
             kind_id(i_unit) = cp_ukind_length
-         CASE ("pm")
+         CASE ("PM")
             unit_id(i_unit) = cp_units_pm
             kind_id(i_unit) = cp_ukind_length
-         CASE ("nm")
+         CASE ("NM")
             unit_id(i_unit) = cp_units_nm
             kind_id(i_unit) = cp_ukind_length
-         CASE ("angstrom")
+         CASE ("ANGSTROM")
             unit_id(i_unit) = cp_units_angstrom
             kind_id(i_unit) = cp_ukind_length
-         CASE ("length")
+         CASE ("LENGTH")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_length
-         CASE ("K", "K_temp")
+         CASE ("K", "K_TEMP")
             unit_id(i_unit) = cp_units_k
             kind_id(i_unit) = cp_ukind_temperature
-         CASE ("au_temp")
+         CASE ("AU_TEMP")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_temperature
-         CASE ("temperature")
+         CASE ("TEMPERATURE")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_temperature
-         CASE ("atm")
+         CASE ("ATM")
             unit_id(i_unit) = cp_units_atm
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("bar")
+         CASE ("BAR")
             unit_id(i_unit) = cp_units_bar
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("kbar")
+         CASE ("KBAR")
             unit_id(i_unit) = cp_units_kbar
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("Pa")
+         CASE ("PA")
             unit_id(i_unit) = cp_units_Pa
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("MPa")
+         CASE ("MPA")
             unit_id(i_unit) = cp_units_MPa
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("GPa")
+         CASE ("GPA")
             unit_id(i_unit) = cp_units_GPa
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("au_p")
+         CASE ("AU_P")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("pressure")
+         CASE ("PRESSURE")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_pressure
-         CASE ("rad")
+         CASE ("RAD")
             unit_id(i_unit) = cp_units_rad
             kind_id(i_unit) = cp_ukind_angle
-         CASE ("deg")
+         CASE ("DEG")
             unit_id(i_unit) = cp_units_deg
             kind_id(i_unit) = cp_ukind_angle
-         CASE ("angle")
+         CASE ("ANGLE")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_angle
-         CASE ("s")
+         CASE ("S")
             unit_id(i_unit) = cp_units_s
             kind_id(i_unit) = cp_ukind_time
-         CASE ("fs")
+         CASE ("FS")
             unit_id(i_unit) = cp_units_fs
             kind_id(i_unit) = cp_ukind_time
-         CASE ("ps")
+         CASE ("PS")
             unit_id(i_unit) = cp_units_ps
             kind_id(i_unit) = cp_ukind_time
-         CASE ("wavenumber_t")
+         CASE ("WAVENUMBER_T")
             unit_id(i_unit) = cp_units_wn
             kind_id(i_unit) = cp_ukind_time
-         CASE ("au_t")
+         CASE ("AU_T")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_time
-         CASE ("time")
+         CASE ("TIME")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_time
-         CASE ("kg")
+         CASE ("KG")
             unit_id(i_unit) = cp_units_kg
             kind_id(i_unit) = cp_ukind_mass
-         CASE ("amu")
+         CASE ("AMU")
             unit_id(i_unit) = cp_units_amu
             kind_id(i_unit) = cp_ukind_mass
-         CASE ("m_e")
+         CASE ("M_E")
             unit_id(i_unit) = cp_units_m_e
             kind_id(i_unit) = cp_ukind_mass
-         CASE ("au_m")
+         CASE ("AU_M")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_mass
-         CASE ("mass")
+         CASE ("MASS")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_mass
-         CASE ("volt")
+         CASE ("VOLT")
             unit_id(i_unit) = cp_units_volt
             kind_id(i_unit) = cp_ukind_potential
-         CASE ("au_pot")
+         CASE ("AU_POT")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_potential
-         CASE ("potential")
+         CASE ("POTENTIAL")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_potential
-         CASE ("N", "Newton")
+         CASE ("N", "NEWTON")
             unit_id(i_unit) = cp_units_Newton
             kind_id(i_unit) = cp_ukind_force
-         CASE ("mN", "mNewton")
+         CASE ("MN", "MNEWTON")
             unit_id(i_unit) = cp_units_mNewton
             kind_id(i_unit) = cp_ukind_force
-         CASE ("au_f")
+         CASE ("AU_F")
             unit_id(i_unit) = cp_units_au
             kind_id(i_unit) = cp_ukind_force
-         CASE ("force")
+         CASE ("FORCE")
             unit_id(i_unit) = cp_units_none
             kind_id(i_unit) = cp_ukind_force
-         CASE ("au")
+         CASE ("AU")
             CALL cp_abort(__LOCATION__, &
                           "au unit without specifing its kind not accepted, use "// &
                           "(au_e, au_f, au_t, au_temp, au_l, au_m, au_p, au_pot)")
          CASE default
-            CPABORT("Unknown unit: "//string(i_low:i_high-1))
+            CPABORT("Unknown unit: "//string(i_low:i_high - 1))
          END SELECT
          power(i_unit) = next_power
          ! parse op
          i_low = i_high
          DO WHILE (i_low <= len_string)
             IF (string(i_low:i_low) /= ' ') EXIT
-            i_low = i_low+1
+            i_low = i_low + 1
          END DO
          i_high = i_low
          DO WHILE (i_high <= len_string)
             IF (string(i_high:i_high) == ' ' .OR. string(i_high:i_high) == '^' .OR. &
                 string(i_high:i_high) == '*' .OR. string(i_high:i_high) == '/') EXIT
-            i_high = i_high+1
+            i_high = i_high + 1
          END DO
          IF (i_high < i_low .OR. i_low > len_string) EXIT
 
          IF (i_high <= len_string) THEN
             IF (string(i_low:i_high) == '^') THEN
-               i_low = i_high+1
+               i_low = i_high + 1
                DO WHILE (i_low <= len_string)
                   IF (string(i_low:i_low) /= ' ') EXIT
-                  i_low = i_low+1
+                  i_low = i_low + 1
                END DO
                i_high = i_low
                DO WHILE (i_high <= len_string)
-                  SELECT CASE (string (i_high:i_high))
+                  SELECT CASE (string(i_high:i_high))
                   CASE ('+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-                     i_high = i_high+1
+                     i_high = i_high + 1
                   CASE default
                      EXIT
                   END SELECT
@@ -398,21 +401,21 @@ CONTAINS
                   CPABORT("an integer number is expected after a '^'")
                   EXIT
                END IF
-               formatstr = "(i"//cp_to_string(i_high-i_low+1)//")"
-               READ (string(i_low:i_high-1), formatstr) &
+               formatstr = "(i"//cp_to_string(i_high - i_low + 1)//")"
+               READ (string(i_low:i_high - 1), formatstr) &
                   next_power
                power(i_unit) = power(i_unit)*next_power
                ! next op
                i_low = i_high
                DO WHILE (i_low < len_string)
                   IF (string(i_low:i_low) /= ' ') EXIT
-                  i_low = i_low+1
+                  i_low = i_low + 1
                END DO
                i_high = i_low
                DO WHILE (i_high <= len_string)
                   IF (string(i_high:i_high) == ' ' .OR. string(i_high:i_high) == '^' .OR. &
                       string(i_high:i_high) == '*' .OR. string(i_high:i_high) == '/') EXIT
-                  i_high = i_high+1
+                  i_high = i_high + 1
                END DO
             END IF
          ENDIF
@@ -421,16 +424,16 @@ CONTAINS
          IF (i_high <= len_string) THEN
             IF (string(i_low:i_high) == "*" .OR. string(i_low:i_high) == '/') THEN
                IF (string(i_low:i_high) == '/') next_power = -1
-               i_low = i_high+1
+               i_low = i_high + 1
                DO WHILE (i_low <= len_string)
                   IF (string(i_low:i_low) /= ' ') EXIT
-                  i_low = i_low+1
+                  i_low = i_low + 1
                END DO
                i_high = i_low
                DO WHILE (i_high <= len_string)
                   IF (string(i_high:i_high) == ' ' .OR. string(i_high:i_high) == '^' .OR. &
                       string(i_high:i_high) == '*' .OR. string(i_high:i_high) == '/') EXIT
-                  i_high = i_high+1
+                  i_high = i_high + 1
                END DO
             END IF
          ENDIF
@@ -466,15 +469,15 @@ CONTAINS
       CPASSERT(SIZE(unit_id) <= cp_unit_max_kinds)
       ALLOCATE (unit)
       unit%ref_count = 1
-      last_unit_id = last_unit_id+1
+      last_unit_id = last_unit_id + 1
       unit%id_nr = last_unit_id
       unit%kind_id(1:SIZE(kind_id)) = kind_id
-      unit%kind_id(SIZE(kind_id)+1:) = cp_ukind_none
+      unit%kind_id(SIZE(kind_id) + 1:) = cp_ukind_none
       unit%unit_id(1:SIZE(unit_id)) = unit_id
       unit%unit_id(SIZE(unit_id):) = cp_units_none
       IF (PRESENT(power)) THEN
          unit%power(1:SIZE(power)) = power
-         unit%power(SIZE(power)+1:) = 0
+         unit%power(SIZE(power) + 1:) = 0
          DO i = 1, SIZE(unit%power)
             IF (unit%power(i) == 0) THEN
                unit%kind_id(i) = cp_ukind_none
@@ -500,11 +503,11 @@ CONTAINS
             max_kind = unit%kind_id(i)
             max_pos = i
             repeat = .FALSE.
-            DO j = i+1, SIZE(unit%kind_id)
+            DO j = i + 1, SIZE(unit%kind_id)
                IF (unit%kind_id(j) >= max_kind) THEN
                   IF (unit%kind_id(j) /= 0 .AND. unit%kind_id(j) == max_kind .AND. &
                       unit%unit_id(j) == unit%unit_id(max_pos)) THEN
-                     unit%power(max_pos) = unit%power(max_pos)+unit%power(j)
+                     unit%power(max_pos) = unit%power(max_pos) + unit%power(j)
                      unit%kind_id(j) = cp_ukind_none
                      unit%unit_id(j) = cp_units_none
                      unit%power(j) = 0
@@ -525,7 +528,7 @@ CONTAINS
             END DO
             IF (.NOT. repeat) EXIT
          END DO
-         IF (max_kind /= 0) unit%n_kinds = unit%n_kinds+1
+         IF (max_kind /= 0) unit%n_kinds = unit%n_kinds + 1
          ! put the max at pos i
          IF (max_pos /= i) THEN
             unit%kind_id(max_pos) = unit%kind_id(i)
@@ -557,7 +560,7 @@ CONTAINS
 
       CPASSERT(ASSOCIATED(unit))
       CPASSERT(unit%ref_count > 0)
-      unit%ref_count = unit%ref_count+1
+      unit%ref_count = unit%ref_count + 1
    END SUBROUTINE cp_unit_retain
 
 ! **************************************************************************************************
@@ -575,7 +578,7 @@ CONTAINS
 
       IF (ASSOCIATED(unit)) THEN
          CPASSERT(unit%ref_count > 0)
-         unit%ref_count = unit%ref_count-1
+         unit%ref_count = unit%ref_count - 1
          IF (unit%ref_count == 0) THEN
             DEALLOCATE (unit)
          END IF
@@ -1059,8 +1062,8 @@ CONTAINS
       END SELECT
       IF (my_power /= 1) THEN
          a = LEN_TRIM(res)
-         CPASSERT(LEN(res)-a >= 3)
-         WRITE (res(a+1:), "('^',i3)") my_power
+         CPASSERT(LEN(res) - a >= 3)
+         WRITE (res(a + 1:), "('^',i3)") my_power
          CALL compress(res, .TRUE.)
       END IF
    END FUNCTION cp_basic_unit_desc
@@ -1107,12 +1110,12 @@ CONTAINS
          END IF
          IF (i > 1) THEN
             res(pos:pos) = "*"
-            pos = pos+1
+            pos = pos + 1
          END IF
          res(pos:) = TRIM(cp_basic_unit_desc(basic_kind=unit%kind_id(i), &
                                              basic_unit=my_unit, accept_undefined=my_accept_undefined, &
                                              power=unit%power(i)))
-         pos = LEN_TRIM(res)+1
+         pos = LEN_TRIM(res) + 1
       END DO
 
    END FUNCTION cp_unit_desc
@@ -1302,7 +1305,7 @@ CONTAINS
       CPASSERT(.NOT. ASSOCIATED(unit_set))
       ALLOCATE (unit_set)
       unit_set%ref_count = 1
-      last_unit_set_id = last_unit_set_id+1
+      last_unit_set_id = last_unit_set_id + 1
       unit_set%id_nr = last_unit_set_id
       my_name = name
       CALL uppercase(my_name)
@@ -1375,7 +1378,7 @@ CONTAINS
 
       CPASSERT(ASSOCIATED(unit_set))
       CPASSERT(unit_set%ref_count > 0)
-      unit_set%ref_count = unit_set%ref_count+1
+      unit_set%ref_count = unit_set%ref_count + 1
    END SUBROUTINE cp_unit_set_retain
 
 ! **************************************************************************************************
@@ -1393,7 +1396,7 @@ CONTAINS
 
       IF (ASSOCIATED(unit_set)) THEN
          CPASSERT(unit_set%ref_count > 0)
-         unit_set%ref_count = unit_set%ref_count-1
+         unit_set%ref_count = unit_set%ref_count - 1
          IF (unit_set%ref_count == 0) THEN
             DO i = 1, SIZE(unit_set%units)
                CALL cp_unit_release(unit_set%units(i)%unit)

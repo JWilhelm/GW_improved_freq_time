@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2019  CP2K developers group                                               !
+!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -18,7 +18,8 @@ MODULE almo_scf
                                               orthogonalize_mos
    USE almo_scf_optimizer,              ONLY: almo_scf_block_diagonal,&
                                               almo_scf_xalmo_eigensolver,&
-                                              almo_scf_xalmo_pcg
+                                              almo_scf_xalmo_pcg,&
+                                              almo_scf_xalmo_trustr
    USE almo_scf_qs,                     ONLY: almo_dm_to_almo_ks,&
                                               almo_scf_construct_quencher,&
                                               calculate_w_matrix_almo,&
@@ -63,10 +64,10 @@ MODULE almo_scf
         almo_deloc_none, almo_deloc_scf, almo_deloc_x, almo_deloc_x_then_scf, &
         almo_deloc_xalmo_1diag, almo_deloc_xalmo_scf, almo_deloc_xalmo_x, almo_deloc_xk, &
         almo_domain_layout_molecular, almo_mat_distr_atomic, almo_mat_distr_molecular, &
-        almo_scf_diag, almo_scf_dm_sign, almo_scf_pcg, almo_scf_skip, atomic_guess, &
-        molecular_guess, optimizer_diis, optimizer_lin_eq_pcg, optimizer_pcg, restart_guess, &
-        smear_fermi_dirac, virt_full, virt_number, virt_occ_size, xalmo_case_block_diag, &
-        xalmo_case_fully_deloc, xalmo_case_normal, xalmo_trial_r0_out
+        almo_scf_diag, almo_scf_dm_sign, almo_scf_pcg, almo_scf_skip, almo_scf_trustr, &
+        atomic_guess, molecular_guess, optimizer_diis, optimizer_lin_eq_pcg, optimizer_pcg, &
+        optimizer_trustr, restart_guess, smear_fermi_dirac, virt_full, virt_number, virt_occ_size, &
+        xalmo_case_block_diag, xalmo_case_fully_deloc, xalmo_case_normal, xalmo_trial_r0_out
    USE input_section_types,             ONLY: section_vals_type
    USE iterate_matrix,                  ONLY: invert_Hotelling,&
                                               matrix_sqrt_Newton_Schulz
@@ -196,6 +197,7 @@ CONTAINS
       almo_scf_env%opt_block_diag_pcg%optimizer_type = optimizer_pcg
       almo_scf_env%opt_xalmo_diis%optimizer_type = optimizer_diis
       almo_scf_env%opt_xalmo_pcg%optimizer_type = optimizer_pcg
+      almo_scf_env%opt_xalmo_trustr%optimizer_type = optimizer_trustr
       almo_scf_env%opt_xalmo_newton_pcg_solver%optimizer_type = optimizer_lin_eq_pcg
 
       ! get info from the qs_env
@@ -285,34 +287,39 @@ CONTAINS
          DO idomain = 1, ndomains
             nelec = almo_scf_env%nocc_of_domain(idomain, 1)
             multip = almo_scf_env%multiplicity_of_domain(idomain)
-            nelec_a = (nelec+multip-1)/2
-            nelec_b = nelec-nelec_a
-            almo_scf_env%nocc_of_domain(idomain, 1) = nelec_a
-            IF (nelec_a .NE. nelec_b) THEN
-               IF (nspins .EQ. 1) THEN
-                  WRITE (*, *) "Domain ", idomain, " out of ", ndomains, ". Electrons = ", nelec
-                  CPABORT("odd e- -- use unrestricted methods")
-               ENDIF
-               almo_scf_env%nocc_of_domain(idomain, 2) = nelec_b
-               ! RZK-warning: open-shell procedures have not been tested yet
-               ! Stop the program now
-               CPABORT("Unrestricted ALMO methods are NYI")
-            ENDIF
+            nelec_a = (nelec + multip - 1)/2
+            nelec_b = nelec - nelec_a
             !! Initializing an occupation-rescaling trick if smearing is on
             IF (almo_scf_env%smear) THEN
+               IF (multip .GT. 1) THEN
+                  CPWARN("BEWARE: Non singlet state detected, treating it as closed-shell")
+               ENDIF
                !! Save real number of electrons of each spin, as it is required for Fermi-dirac smearing
-               almo_scf_env%real_ne_of_domain(idomain, :) = REAL(almo_scf_env%nocc_of_domain(idomain, :), KIND=dp)
+               !! BEWARE : Non singlet states are allowed but treated as closed-shell
+               almo_scf_env%real_ne_of_domain(idomain, :) = REAL(nelec, KIND=dp)/2.0_dp
                !! Add a number of added_mos equal to the number of atoms in domain
                !! (since fragments were computed this way with smearing)
-               almo_scf_env%nocc_of_domain(idomain, :) = almo_scf_env%nocc_of_domain(idomain, :) &
-                                                         +(almo_scf_env%last_atom_of_domain(idomain) &
-                                                           -almo_scf_env%first_atom_of_domain(idomain)+1)
+               almo_scf_env%nocc_of_domain(idomain, :) = CEILING(almo_scf_env%real_ne_of_domain(idomain, :)) &
+                                                         + (almo_scf_env%last_atom_of_domain(idomain) &
+                                                            - almo_scf_env%first_atom_of_domain(idomain) + 1)
+            ELSE
+               almo_scf_env%nocc_of_domain(idomain, 1) = nelec_a
+               IF (nelec_a .NE. nelec_b) THEN
+                  IF (nspins .EQ. 1) THEN
+                     WRITE (*, *) "Domain ", idomain, " out of ", ndomains, ". Electrons = ", nelec
+                     CPABORT("odd e- -- use unrestricted methods")
+                  ENDIF
+                  almo_scf_env%nocc_of_domain(idomain, 2) = nelec_b
+                  ! RZK-warning: open-shell procedures have not been tested yet
+                  ! Stop the program now
+                  CPABORT("Unrestricted ALMO methods are NYI")
+               ENDIF
             END IF
          ENDDO
          DO ispin = 1, nspins
             ! take care of the full virtual subspace
             almo_scf_env%nvirt_full_of_domain(:, ispin) = &
-               almo_scf_env%nbasis_of_domain(:)- &
+               almo_scf_env%nbasis_of_domain(:) - &
                almo_scf_env%nocc_of_domain(:, ispin)
             ! and the truncated virtual subspace
             SELECT CASE (almo_scf_env%deloc_truncate_virt)
@@ -326,7 +333,7 @@ CONTAINS
                      MIN(almo_scf_env%deloc_virt_per_domain, &
                          almo_scf_env%nvirt_full_of_domain(idomain, ispin))
                   almo_scf_env%nvirt_disc_of_domain(idomain, ispin) = &
-                     almo_scf_env%nvirt_full_of_domain(idomain, ispin)- &
+                     almo_scf_env%nvirt_full_of_domain(idomain, ispin) - &
                      almo_scf_env%nvirt_of_domain(idomain, ispin)
                ENDDO
             CASE (virt_occ_size)
@@ -335,7 +342,7 @@ CONTAINS
                      MIN(almo_scf_env%nocc_of_domain(idomain, ispin), &
                          almo_scf_env%nvirt_full_of_domain(idomain, ispin))
                   almo_scf_env%nvirt_disc_of_domain(idomain, ispin) = &
-                     almo_scf_env%nvirt_full_of_domain(idomain, ispin)- &
+                     almo_scf_env%nvirt_full_of_domain(idomain, ispin) - &
                      almo_scf_env%nvirt_of_domain(idomain, ispin)
                ENDDO
             CASE DEFAULT
@@ -351,7 +358,7 @@ CONTAINS
       DO idomain = 1, ndomains
          DO iao = 1, almo_scf_env%nbasis_of_domain(idomain)
             almo_scf_env%domain_index_of_ao(ao) = idomain
-            ao = ao+1
+            ao = ao + 1
          ENDDO
       ENDDO
 
@@ -401,7 +408,7 @@ CONTAINS
             CPABORT("Forces for perturbative methods are NYI. Change DELOCALIZE_METHOD")
          ENDIF
          ! switch to ASPC after a certain number of exact steps is done
-         IF (almo_scf_env%almo_history%istore .GT. (almo_scf_env%almo_history%nstore+1)) THEN
+         IF (almo_scf_env%almo_history%istore .GT. (almo_scf_env%almo_history%nstore + 1)) THEN
             IF (almo_scf_env%opt_block_diag_pcg%eps_error_early .GT. 0.0_dp) THEN
                almo_scf_env%opt_block_diag_pcg%eps_error = almo_scf_env%opt_block_diag_pcg%eps_error_early
                almo_scf_env%opt_block_diag_pcg%early_stopping_on = .TRUE.
@@ -426,7 +433,7 @@ CONTAINS
             almo_scf_env%opt_block_diag_diis%early_stopping_on = .FALSE.
             almo_scf_env%opt_block_diag_pcg%early_stopping_on = .FALSE.
          ENDIF
-         IF (almo_scf_env%xalmo_history%istore .GT. (almo_scf_env%xalmo_history%nstore+1)) THEN
+         IF (almo_scf_env%xalmo_history%istore .GT. (almo_scf_env%xalmo_history%nstore + 1)) THEN
             IF (almo_scf_env%opt_xalmo_pcg%eps_error_early .GT. 0.0_dp) THEN
                almo_scf_env%opt_xalmo_pcg%eps_error = almo_scf_env%opt_xalmo_pcg%eps_error_early
                almo_scf_env%opt_xalmo_pcg%early_stopping_on = .TRUE.
@@ -639,9 +646,9 @@ CONTAINS
 
             ! extrapolation
             DO iaspc = 1, naspc
-               istore = MOD(almo_scf_env%almo_history%istore-iaspc, almo_scf_env%almo_history%nstore)+1
-               alpha = (-1.0_dp)**(iaspc+1)*REAL(iaspc, KIND=dp)* &
-                       binomial(2*naspc, naspc-iaspc)/binomial(2*naspc-2, naspc-1)
+               istore = MOD(almo_scf_env%almo_history%istore - iaspc, almo_scf_env%almo_history%nstore) + 1
+               alpha = (-1.0_dp)**(iaspc + 1)*REAL(iaspc, KIND=dp)* &
+                       binomial(2*naspc, naspc - iaspc)/binomial(2*naspc - 2, naspc - 1)
                IF (unit_nr > 0) THEN
                   WRITE (unit_nr, FMT="(T3,A2,I0,A4,F10.6)") &
                      "B(", iaspc, ") = ", alpha
@@ -776,11 +783,11 @@ CONTAINS
 
       IF (almo_scf_env%almo_history%nstore > 0) THEN
 
-         almo_scf_env%almo_history%istore = almo_scf_env%almo_history%istore+1
+         almo_scf_env%almo_history%istore = almo_scf_env%almo_history%istore + 1
 
          DO ispin = 1, SIZE(almo_scf_env%matrix_t_blk)
 
-            istore = MOD(almo_scf_env%almo_history%istore-1, almo_scf_env%almo_history%nstore)+1
+            istore = MOD(almo_scf_env%almo_history%istore - 1, almo_scf_env%almo_history%nstore) + 1
 
             IF (almo_scf_env%almo_history%istore == 1) THEN
                CALL dbcsr_create(almo_scf_env%almo_history%matrix_t(ispin), &
@@ -830,11 +837,11 @@ CONTAINS
       IF (almo_scf_env%xalmo_history%nstore > 0 .AND. &
           delocalization_uses_extrapolation) THEN
 
-         almo_scf_env%xalmo_history%istore = almo_scf_env%xalmo_history%istore+1
+         almo_scf_env%xalmo_history%istore = almo_scf_env%xalmo_history%istore + 1
 
          DO ispin = 1, SIZE(almo_scf_env%matrix_t)
 
-            istore = MOD(almo_scf_env%xalmo_history%istore-1, almo_scf_env%xalmo_history%nstore)+1
+            istore = MOD(almo_scf_env%xalmo_history%istore - 1, almo_scf_env%xalmo_history%nstore) + 1
 
             IF (almo_scf_env%xalmo_history%istore == 1) THEN
                CALL dbcsr_create(almo_scf_env%xalmo_history%matrix_t(ispin), &
@@ -971,6 +978,8 @@ CONTAINS
                SELECT CASE (almo_scf_env%xalmo_update_algorithm)
                CASE (almo_scf_diag)
                   CALL print_optimizer_options(almo_scf_env%opt_xalmo_diis, unit_nr)
+               CASE (almo_scf_trustr)
+                  CALL print_optimizer_options(almo_scf_env%opt_xalmo_trustr, unit_nr)
                CASE (almo_scf_pcg)
                   CALL print_optimizer_options(almo_scf_env%opt_xalmo_pcg, unit_nr)
                END SELECT
@@ -1073,16 +1082,16 @@ CONTAINS
             IF (idomain .EQ. 1) THEN
                index1_prev = 1
             ELSE
-               index1_prev = almo_scf_env%domain_map(1)%index1(idomain-1)
+               index1_prev = almo_scf_env%domain_map(1)%index1(idomain - 1)
             ENDIF
 
             SELECT CASE (almo_scf_env%deloc_method)
             CASE (almo_deloc_none)
                nneighbors(idomain) = 0
             CASE (almo_deloc_x, almo_deloc_scf, almo_deloc_x_then_scf)
-               nneighbors(idomain) = almo_scf_env%ndomains-1 ! minus self
+               nneighbors(idomain) = almo_scf_env%ndomains - 1 ! minus self
             CASE (almo_deloc_xalmo_1diag, almo_deloc_xalmo_x, almo_deloc_xalmo_scf)
-               nneighbors(idomain) = almo_scf_env%domain_map(1)%index1(idomain)-index1_prev-1 ! minus self
+               nneighbors(idomain) = almo_scf_env%domain_map(1)%index1(idomain) - index1_prev - 1 ! minus self
             CASE DEFAULT
                nneighbors(idomain) = -1
             END SELECT
@@ -1143,13 +1152,13 @@ CONTAINS
                   IF (idomain .EQ. 1) THEN
                      index1_prev = 1
                   ELSE
-                     index1_prev = almo_scf_env%domain_map(1)%index1(idomain-1)
+                     index1_prev = almo_scf_env%domain_map(1)%index1(idomain - 1)
                   ENDIF
 
                   WRITE (unit_nr, '(T2,I10,":")') idomain
                   WRITE (unit_nr, '(T12,11I6)') &
                      almo_scf_env%domain_map(1)%pairs &
-                     (index1_prev:almo_scf_env%domain_map(1)%index1(idomain)-1, 1) ! includes self
+                     (index1_prev:almo_scf_env%domain_map(1)%index1(idomain) - 1, 1) ! includes self
 
                ENDDO ! cycle over domains
 
@@ -1459,16 +1468,34 @@ CONTAINS
          !!!ENDIF
          !!!CALL harris_foulkes_correction(qs_env,almo_scf_env)
 
-         CALL almo_scf_xalmo_pcg(qs_env=qs_env, &
-                                 almo_scf_env=almo_scf_env, &
-                                 optimizer=almo_scf_env%opt_xalmo_pcg, &
-                                 quench_t=no_quench, &
-                                 matrix_t_in=almo_scf_env%matrix_t_blk, &
-                                 matrix_t_out=almo_scf_env%matrix_t, &
-                                 !assume_t0_q0x=.TRUE., &
-                                 assume_t0_q0x=(almo_scf_env%xalmo_trial_wf .EQ. xalmo_trial_r0_out), &
-                                 perturbation_only=.TRUE., &
-                                 special_case=xalmo_case_fully_deloc)
+         IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_pcg) THEN
+
+            CALL almo_scf_xalmo_pcg(qs_env=qs_env, &
+                                    almo_scf_env=almo_scf_env, &
+                                    optimizer=almo_scf_env%opt_xalmo_pcg, &
+                                    quench_t=no_quench, &
+                                    matrix_t_in=almo_scf_env%matrix_t_blk, &
+                                    matrix_t_out=almo_scf_env%matrix_t, &
+                                    assume_t0_q0x=(almo_scf_env%xalmo_trial_wf .EQ. xalmo_trial_r0_out), &
+                                    perturbation_only=.TRUE., &
+                                    special_case=xalmo_case_fully_deloc)
+
+         ELSE IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_trustr) THEN
+
+            CALL almo_scf_xalmo_trustr(qs_env=qs_env, &
+                                       almo_scf_env=almo_scf_env, &
+                                       optimizer=almo_scf_env%opt_xalmo_trustr, &
+                                       quench_t=no_quench, &
+                                       matrix_t_in=almo_scf_env%matrix_t_blk, &
+                                       matrix_t_out=almo_scf_env%matrix_t, &
+                                       perturbation_only=.TRUE., &
+                                       special_case=xalmo_case_fully_deloc)
+
+         ELSE
+
+            CPABORT("Other algorithms do not exist")
+
+         ENDIF
 
       CASE (almo_deloc_xalmo_1diag)
 
@@ -1498,10 +1525,20 @@ CONTAINS
                                     quench_t=almo_scf_env%quench_t, &
                                     matrix_t_in=almo_scf_env%matrix_t_blk, &
                                     matrix_t_out=almo_scf_env%matrix_t, &
-                                    !assume_t0_q0x=.TRUE., &
                                     assume_t0_q0x=(almo_scf_env%xalmo_trial_wf .EQ. xalmo_trial_r0_out), &
                                     perturbation_only=.TRUE., &
                                     special_case=xalmo_case_normal)
+
+         ELSE IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_trustr) THEN
+
+            CALL almo_scf_xalmo_trustr(qs_env=qs_env, &
+                                       almo_scf_env=almo_scf_env, &
+                                       optimizer=almo_scf_env%opt_xalmo_trustr, &
+                                       quench_t=almo_scf_env%quench_t, &
+                                       matrix_t_in=almo_scf_env%matrix_t_blk, &
+                                       matrix_t_out=almo_scf_env%matrix_t, &
+                                       perturbation_only=.TRUE., &
+                                       special_case=xalmo_case_normal)
 
          ELSE
 
@@ -1531,7 +1568,6 @@ CONTAINS
                                     quench_t=almo_scf_env%quench_t, &
                                     matrix_t_in=almo_scf_env%matrix_t_blk, &
                                     matrix_t_out=almo_scf_env%matrix_t, &
-                                    !assume_t0_q0x=.TRUE., &
                                     assume_t0_q0x=(almo_scf_env%xalmo_trial_wf .EQ. xalmo_trial_r0_out), &
                                     perturbation_only=.FALSE., &
                                     special_case=xalmo_case_normal)
@@ -1548,6 +1584,21 @@ CONTAINS
                                                arbitrary_optimizer)
             ENDIF ! experimental
 
+         ELSE IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_trustr) THEN
+
+            CALL almo_scf_xalmo_trustr(qs_env=qs_env, &
+                                       almo_scf_env=almo_scf_env, &
+                                       optimizer=almo_scf_env%opt_xalmo_trustr, &
+                                       quench_t=almo_scf_env%quench_t, &
+                                       matrix_t_in=almo_scf_env%matrix_t_blk, &
+                                       matrix_t_out=almo_scf_env%matrix_t, &
+                                       perturbation_only=.FALSE., &
+                                       special_case=xalmo_case_normal)
+
+         ELSE
+
+            CPABORT("Other algorithms do not exist")
+
          ENDIF
 
       CASE DEFAULT
@@ -1563,15 +1614,34 @@ CONTAINS
             CPABORT("full scf is NYI for truncated virtual space")
          ENDIF
 
-         CALL almo_scf_xalmo_pcg(qs_env=qs_env, &
-                                 almo_scf_env=almo_scf_env, &
-                                 optimizer=almo_scf_env%opt_xalmo_pcg, &
-                                 quench_t=no_quench, &
-                                 matrix_t_in=almo_scf_env%matrix_t, &
-                                 matrix_t_out=almo_scf_env%matrix_t, &
-                                 assume_t0_q0x=.FALSE., &
-                                 perturbation_only=.FALSE., &
-                                 special_case=xalmo_case_fully_deloc)
+         IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_pcg) THEN
+
+            CALL almo_scf_xalmo_pcg(qs_env=qs_env, &
+                                    almo_scf_env=almo_scf_env, &
+                                    optimizer=almo_scf_env%opt_xalmo_pcg, &
+                                    quench_t=no_quench, &
+                                    matrix_t_in=almo_scf_env%matrix_t, &
+                                    matrix_t_out=almo_scf_env%matrix_t, &
+                                    assume_t0_q0x=.FALSE., &
+                                    perturbation_only=.FALSE., &
+                                    special_case=xalmo_case_fully_deloc)
+
+         ELSE IF (almo_scf_env%xalmo_update_algorithm .EQ. almo_scf_trustr) THEN
+
+            CALL almo_scf_xalmo_trustr(qs_env=qs_env, &
+                                       almo_scf_env=almo_scf_env, &
+                                       optimizer=almo_scf_env%opt_xalmo_trustr, &
+                                       quench_t=no_quench, &
+                                       matrix_t_in=almo_scf_env%matrix_t, &
+                                       matrix_t_out=almo_scf_env%matrix_t, &
+                                       perturbation_only=.FALSE., &
+                                       special_case=xalmo_case_fully_deloc)
+
+         ELSE
+
+            CPABORT("Other algorithms do not exist")
+
+         ENDIF
 
       END SELECT
 

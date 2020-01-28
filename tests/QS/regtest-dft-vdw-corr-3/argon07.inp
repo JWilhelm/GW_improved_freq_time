@@ -34,8 +34,8 @@
           PARAMETRIZATION revPBE
           SCALE_C 0.0
         &END PBE
-        &VWN
-        &END VWN
+        &PW92
+        &END PW92
       &END XC_FUNCTIONAL
       &vdW_POTENTIAL
          DISPERSION_FUNCTIONAL NON_LOCAL
@@ -43,7 +43,7 @@
            TYPE DRSLL
            VERBOSE_OUTPUT
            KERNEL_FILE_NAME vdW_kernel_table.dat
-           CUTOFF  80
+           CUTOFF 40
          &END NON_LOCAL
       &END vdW_POTENTIAL
     &END XC

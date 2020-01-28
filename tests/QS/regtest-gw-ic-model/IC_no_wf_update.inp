@@ -52,10 +52,10 @@
           EPS_FILTER  1.0E-6
         &END
         ERI_METHOD OS
-        RI OVERLAP
-        IM_TIME
+        &RI_METRIC
+          POTENTIAL_TYPE IDENTITY
+        &END
         &IM_TIME
-          DO_DBCSR_T .FALSE.
         &END
         &RI_RPA
           RPA_NUM_QUAD_POINTS  5
@@ -67,7 +67,6 @@
             PRINT_GW_DETAILS
             IC
             &IC
-              OPTIMIZE_HOMO_LUMO FALSE
             &END
           &END
         &END RI_RPA

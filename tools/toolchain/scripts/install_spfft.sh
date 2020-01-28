@@ -2,8 +2,8 @@
 [ "${BASH_SOURCE[0]}" ] && SCRIPT_NAME="${BASH_SOURCE[0]}" || SCRIPT_NAME=$0
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_NAME")" && pwd -P)"
 
-spfft_ver="0.9.8"
-spfft_sha256="e47989bcc9ca5cec424504f84ff75d5a09b2063ee0d50e537baf85d3629b15f8"
+spfft_ver="0.9.10"
+spfft_sha256="b4a5cbdf69b5dd97202f269f24e2337b333a45d6ff001aabfca64c7ec412c15d"
 source "${SCRIPT_DIR}"/common_vars.sh
 source "${SCRIPT_DIR}"/tool_kit.sh
 source "${SCRIPT_DIR}"/signal_trap.sh
@@ -96,7 +96,7 @@ export SPFFT_LDFLAGS="${SPFFT_LDFLAGS}"
 export SPFFT_CUDA_LDFLAGS="${SPFFT_CUDA_LDFLAGS}"
 export CP_DFLAGS="\${CP_DFLAGS} IF_MPI(IF_OMP(-D__SPFFT|)|)"
 export CP_CFLAGS="\${CP_CFLAGS} ${SPFFT_CFLAGS}"
-export CP_LDFLAGS="\${CP_LDFLAGS} IF_CUDA(${SPFFT_LDFLAGS}|${SPFFT_CUDA_LDFLAGS})"
+export CP_LDFLAGS="\${CP_LDFLAGS} IF_CUDA(${SPFFT_CUDA_LDFLAGS}|${SPFFT_LDFLAGS})"
 export SPFFT_LIBRARY="-lspfft"
 export SPFFT_ROOT="$pkg_install_dir"
 export SPFFT_INCLUDE_DIR="$pkg_install_dir/include"
