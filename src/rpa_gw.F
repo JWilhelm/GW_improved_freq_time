@@ -130,7 +130,7 @@ CONTAINS
 !> \param t_3c_overl_nnP_ic_reflected_beta ...
 ! **************************************************************************************************
    SUBROUTINE allocate_matrices_gw_im_time(gw_corr_lev_occ, gw_corr_lev_virt, homo, nmo, &
-                                           num_integ_points, unit_nr, &
+                                           num_integ_points_freq, unit_nr, &
                                            RI_blk_sizes, do_ic_model, &
                                            para_env, fm_mat_W_tau, fm_mat_Q, &
                                            mo_coeff, &
@@ -144,7 +144,7 @@ CONTAINS
                                            t_3c_overl_nnP_ic_beta, t_3c_overl_nnP_ic_reflected_beta)
 
       INTEGER, INTENT(IN)                                :: gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                                            nmo, num_integ_points, unit_nr
+                                                            nmo, num_integ_points_freq, unit_nr
       INTEGER, DIMENSION(:), POINTER                     :: RI_blk_sizes
       LOGICAL, INTENT(IN)                                :: do_ic_model
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -203,9 +203,9 @@ CONTAINS
       END IF
 
       NULLIFY (fm_mat_W_tau)
-      ALLOCATE (fm_mat_W_tau(num_integ_points))
+      ALLOCATE (fm_mat_W_tau(num_integ_points_freq))
 
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_integ_points_freq
 
          NULLIFY (fm_mat_W_tau(jquad)%matrix)
          CALL cp_fm_create(fm_mat_W_tau(jquad)%matrix, fm_mat_Q%matrix_struct)
@@ -215,8 +215,8 @@ CONTAINS
       END DO
 
       NULLIFY (mat_W)
-      ALLOCATE (mat_W(num_integ_points))
-      DO jquad = 1, num_integ_points
+      ALLOCATE (mat_W(num_integ_points_freq))
+      DO jquad = 1, num_integ_points_freq
          ALLOCATE (mat_W(jquad)%matrix)
          CALL dbcsr_create(matrix=mat_W(jquad)%matrix, &
                            template=matrix_s(1)%matrix, &
@@ -280,7 +280,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE allocate_matrices_gw(vec_Sigma_c_gw, color_rpa_group, dimen_nm_gw, &
                                    gw_corr_lev_occ, gw_corr_lev_virt, homo, &
-                                   nmo, num_integ_points, num_integ_group, unit_nr, &
+                                   nmo, num_integ_group, num_integ_points_freq, unit_nr, &
                                    gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                    do_minimax_quad, do_periodic, do_ri_Sigma_x, my_do_gw, &
                                    first_cycle_periodic_correction, &
@@ -296,7 +296,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(OUT)                 :: vec_Sigma_c_gw
       INTEGER, INTENT(IN) :: color_rpa_group, dimen_nm_gw, gw_corr_lev_occ, gw_corr_lev_virt, &
-         homo, nmo, num_integ_points, num_integ_group, unit_nr
+         homo, nmo, num_integ_group, num_integ_points_freq, unit_nr
       INTEGER, INTENT(INOUT)                             :: gw_corr_lev_tot, num_fit_points
       REAL(KIND=dp)                                      :: omega_max_fit
       LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_periodic, &
@@ -354,10 +354,10 @@ CONTAINS
       gw_corr_lev_tot = gw_corr_lev_occ + gw_corr_lev_virt
 
       ! fill the omega_frequency vector
-      ALLOCATE (vec_omega_gw(num_integ_points))
+      ALLOCATE (vec_omega_gw(num_integ_points_freq))
       vec_omega_gw = 0.0_dp
 
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_integ_points_freq
          IF (do_minimax_quad) THEN
             omega = tj(jquad)
          ELSE
@@ -369,7 +369,7 @@ CONTAINS
       ! determine number of fit points in the interval [0,w_max] for virt, or [-w_max,0] for occ
       num_fit_points = 0
 
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_integ_points_freq
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             num_fit_points = num_fit_points + 1
          END IF
@@ -390,7 +390,7 @@ CONTAINS
 
       ! fill the omega vector with frequencies, where we calculate the self-energy
       iquad = 0
-      DO jquad = 1, num_integ_points
+      DO jquad = 1, num_integ_points_freq
          IF (vec_omega_gw(jquad) < omega_max_fit) THEN
             iquad = iquad + 1
             vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
@@ -1253,7 +1253,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                 gw_corr_lev_tot, gw_corr_lev_virt, homo, &
-                                nmo, num_fit_points, num_integ_points, &
+                                nmo, num_fit_points, num_integ_points, num_integ_points_freq, &
                                 num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
                                 do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
                                 e_fermi, eps_filter, &
@@ -1277,7 +1277,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(INOUT)               :: vec_Sigma_c_gw
       INTEGER, INTENT(IN) :: count_ev_sc_GW, gw_corr_lev_occ, gw_corr_lev_tot, gw_corr_lev_virt, &
-         homo, nmo, num_fit_points, num_integ_points
+         homo, nmo, num_fit_points, num_integ_points, num_integ_points_freq
       INTEGER                                            :: num_points_corr
       INTEGER, INTENT(IN)                                :: unit_nr
       LOGICAL, INTENT(IN)                                :: do_apply_ic_corr_to_gw, do_im_time, &
@@ -1364,7 +1364,7 @@ CONTAINS
       IF (do_im_time .AND. .NOT. do_kpoints_cubic_RPA) THEN
          num_points_corr = mp2_env%ri_g0w0%num_omega_points
 
-         CALL compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, &
+         CALL compute_self_energy_im_time_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, mat_greens_fct_occ, &
                                              mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -1381,7 +1381,7 @@ CONTAINS
 
          IF (my_open_shell) THEN
 
-            CALL compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ_beta, &
+            CALL compute_self_energy_im_time_gw(num_integ_points, num_integ_points_freq,nmo, tau_tj, tj, mat_greens_fct_occ_beta, &
                                                 mat_greens_fct_virt_beta, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
@@ -4628,7 +4628,8 @@ CONTAINS
 !> \param unit_nr ...
 !> \param do_beta ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_im_time_gw(num_integ_points, nmo, tau_tj, tj, mat_greens_fct_occ, mat_greens_fct_virt, &
+   SUBROUTINE compute_self_energy_im_time_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+                                             mat_greens_fct_occ, mat_greens_fct_virt, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
                                              fm_scaled_dm_virt_tau, Eigenval, eps_filter, e_fermi, fm_mat_W_tau, &
@@ -4640,7 +4641,7 @@ CONTAINS
                                              mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                              first_cycle_periodic_correction, kpoints, num_fit_points, mo_coeff, &
                                              do_ri_Sigma_x, vec_Sigma_x_gw, unit_nr, do_beta)
-      INTEGER, INTENT(IN)                                :: num_integ_points, nmo
+      INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_integ_points_freq
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj, tj
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_greens_fct_occ, mat_greens_fct_virt, &

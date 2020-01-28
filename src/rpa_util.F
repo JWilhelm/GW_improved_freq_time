@@ -129,7 +129,7 @@ CONTAINS
 !> \param mat_P_omega_beta ...
 ! **************************************************************************************************
    SUBROUTINE alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, num_integ_points, &
-                            fm_mat_Q, fm_mo_coeff_occ, fm_mo_coeff_virt, &
+                            num_integ_points_freq, fm_mat_Q, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                             fm_matrix_L_RI_metric, mat_P_global, &
                             t_3c_O, matrix_s, kpoints, eps_filter_im_time, &
                             do_ri_sos_laplace_mp2, cut_memory, nkp, num_cells_dm, num_3c_repl, &
@@ -148,7 +148,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
-      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points
+      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points, num_integ_points_freq
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mo_coeff_occ, &
                                                             fm_mo_coeff_virt
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_matrix_L_RI_metric
@@ -256,10 +256,10 @@ CONTAINS
          size_P = 1
       END IF
 
-      CALL alloc_mat_P_omega(mat_P_omega, num_integ_points, size_P, mat_P_global%matrix)
+      CALL alloc_mat_P_omega(mat_P_omega, num_integ_points_freq, size_P, mat_P_global%matrix)
 
       IF (my_open_shell .AND. do_ri_sos_laplace_mp2) THEN
-         CALL alloc_mat_P_omega(mat_P_omega_beta, num_integ_points, size_P, mat_P_global%matrix)
+         CALL alloc_mat_P_omega(mat_P_omega_beta, num_integ_points_freq, size_P, mat_P_global%matrix)
       END IF
 
       IF (do_kpoints_cubic_RPA .OR. do_kpoints_from_Gamma) THEN
