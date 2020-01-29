@@ -4669,7 +4669,7 @@ CONTAINS
       INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
                                                             handle3, iquad, jquad, mo_end, &
                                                             mo_start, n_level_gw, n_level_gw_ref, &
-                                                            unit_nr_prv, iw, n_1, n, real_imaginary
+                                                            unit_nr_prv, iw, n_1, n, real_imaginary, i_occ_virt
       LOGICAL                                            :: memory_info, my_do_beta, do_occ, do_virt
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
@@ -4718,8 +4718,6 @@ CONTAINS
 
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
-         ALLOCATE(Sigma_c_gw_tmp(1))
-
          ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
          ! w' is stored in tj with entries > 0. Therefore, we split the integration in two parts for w' > 0 / w' = tj(jquad)  
          ! w' < 0 / w' = -tj(jquad)
@@ -4756,19 +4754,37 @@ CONTAINS
                                                     iquad*jquad, nmo, homo, eps_filter, omega_diff, count_ev_sc_GW, &
                                                     real_imaginary)
 
-                  IF(real_imaginary==1) THEN
-                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                                    file_position="APPEND")
-                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
-                     CALL close_file(iw)
-                  END IF
+!                  IF(real_imaginary==1) THEN
+!                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+!                                    file_position="APPEND")
+!                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
+!                     CALL close_file(iw)
+!                  END IF
 
-                  DO n_level_gw_ref = mo_start, mo_end
+                  DO i_occ_virt = 1, 2
 
-                     n_level_gw = n_level_gw_ref - homo + gw_corr_lev_occ
+                     do_occ = .FALSE.
+                     do_virt = .FALSE.
+                     IF(i_occ_virt == 1) do_occ = .TRUE.
+                     IF(i_occ_virt == 2) do_virt = .TRUE.
 
-                     do_occ  = (n_level_gw_ref .LE. homo)
-                     do_virt = (n_level_gw_ref > homo)
+                     IF(do_occ) THEN
+                        mo_start = homo - gw_corr_lev_occ + 1
+                        mo_end = homo
+                        ALLOCATE(Sigma_c_gw_tmp(gw_corr_lev_occ))
+                     ELSE IF(do_virt) THEN
+                        mo_start = homo + 1
+                        mo_end = homo + gw_corr_lev_virt
+                        ALLOCATE(Sigma_c_gw_tmp(gw_corr_lev_virt))
+                     END IF
+
+
+!                  DO n_level_gw_ref = mo_start, mo_end
+!
+!                     n_level_gw = n_level_gw_ref - homo + gw_corr_lev_occ
+!
+!                     do_occ  = (n_level_gw_ref .LE. homo)
+!                     do_virt = (n_level_gw_ref > homo)
 
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
@@ -4793,7 +4809,7 @@ CONTAINS
 
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
-                                              Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                              Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
                                               t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
          
                      END IF
@@ -4802,7 +4818,7 @@ CONTAINS
 
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
-                                              Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                              Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
                                               t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
 
                      END IF
@@ -4817,8 +4833,20 @@ CONTAINS
                         weight = wj(jquad-num_integ_points_freq)/2.0_dp
                      END IF
 
-                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
-                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
+!                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
+!                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
+
+                     IF(do_occ) THEN
+                     vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) = &
+                        vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) - &
+                        weight/twopi*re_im*Sigma_c_gw_tmp(:)
+                     ELSE IF(do_virt) THEN
+                     vec_Sigma_c_gw(gw_corr_lev_occ+1:gw_corr_lev_tot, iquad, 1) = &
+                        vec_Sigma_c_gw(gw_corr_lev_occ+1:gw_corr_lev_tot, iquad, 1) - &
+                        weight/twopi*re_im*Sigma_c_gw_tmp(:)
+                     END IF
+
+                     DEALLOCATE(Sigma_c_gw_tmp)
 
                   END DO
 
@@ -4833,8 +4861,6 @@ CONTAINS
          n = gw_corr_lev_occ
          vec_Sigma_c_gw(1:n,:,:) = - REAL(vec_Sigma_c_gw(1:n,:,:))*(1.0_dp, 0.0_dp)  &
                                    + AIMAG(vec_Sigma_c_gw(1:n,:,:))*(0.0_dp, 1.0_dp)
-
-         DEALLOCATE(Sigma_c_gw_tmp)
 
       ELSE
 
