@@ -950,7 +950,7 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_global, iiB, iquad, j_global, &
-                                                            jjB, ncol_local, nrow_local
+                                                            jjB, ncol_local, nrow_local, iw
       INTEGER, DIMENSION(:), POINTER                     :: col_indices, row_indices
       LOGICAL                                            :: my_open_shell
       REAL(KIND=dp)                                      :: tau, weight
@@ -1039,6 +1039,19 @@ CONTAINS
                END IF
             END DO
          END DO
+
+! BEGIN PRINTING
+         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,1)
+         CALL close_file(iw)
+
+         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                        file_position="APPEND")
+         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,2)
+         CALL close_file(iw)
+! END PRINTING
+
 
          ! multiply with L from the left and the right to get the screened Coulomb interaction
          CALL cp_gemm('T', 'N', dimen_RI, dimen_RI, dimen_RI, 1.0_dp, fm_mat_L(1, 1)%matrix, fm_mat_Q, &
@@ -4779,7 +4792,7 @@ CONTAINS
                   omega_diff = vec_omega_fit_gw(iquad) + tj(jquad-num_integ_points_freq)
                END IF
 
-                     PRINT *, 'jquad =', jquad, 'iquad =', iquad
+!JW 2del                     PRINT *, 'jquad =', jquad, 'iquad =', iquad
 
                DO real_imaginary = 1, 2
 
@@ -4793,12 +4806,12 @@ CONTAINS
                                                     iquad*jquad, nmo, homo, eps_filter, omega_diff, count_ev_sc_GW, &
                                                     real_imaginary)
 
-!                  IF(real_imaginary==1) THEN
-!                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-!                                    file_position="APPEND")
-!                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
-!                     CALL close_file(iw)
-!                  END IF
+                  IF(real_imaginary==1) THEN
+                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+                                    file_position="APPEND")
+                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
+                     CALL close_file(iw)
+                  END IF
 
                   DO i_occ_virt = 1, 2
 
@@ -4840,7 +4853,7 @@ CONTAINS
 
                       ! dummy call to initialize all the matrices
                       CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
-                                            mat_greens_fct_occ, mat_W, [0.0_dp, 0.0_dp], &
+                                            mat_greens_fct_occ, mat_W, [1.0_dp, 0.0_dp], &
                                             vec_Sigma_c_gw_neg_tau(:, jquad), [mo_start, mo_end], para_env, unit_nr_prv, &
                                             t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE.)
 
@@ -4874,6 +4887,10 @@ CONTAINS
 
 !                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
 !                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
+
+                     PRINT *, 'jquad =', jquad, 'iquad =', iquad, 'occ/virt =', i_occ_virt, 're/im =', real_imaginary, &
+                              'Sigma_c_gw_tmp =', Sigma_c_gw_tmp
+                     
 
                      IF(do_occ) THEN
                      vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) = &
