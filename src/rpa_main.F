@@ -1330,7 +1330,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: ic_corr_list, ic_corr_list_beta, wkp_W
       TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: cfm_mat_W_kp_tau
       TYPE(cp_cfm_type), POINTER                         :: cfm_mat_Q
-      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W_tau
+      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fm_mat_W
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_mat_L
       TYPE(cp_fm_type), POINTER :: fm_mat_Q_static_bse, fm_mat_Q_static_bse_gemm, &
          fm_mat_RI_global_work, fm_mat_S_gw_work, fm_mat_S_gw_work_beta, fm_mat_work, &
@@ -1448,7 +1448,7 @@ CONTAINS
                   CALL allocate_matrices_gw_im_time(gw_corr_lev_occ, gw_corr_lev_virt, homo, nmo, &
                                                     num_integ_points_freq, unit_nr, &
                                                     RI_blk_sizes, do_ic_model, &
-                                                    para_env, fm_mat_W_tau, fm_mat_Q, &
+                                                    para_env, fm_mat_W, fm_mat_Q, &
                                                     mo_coeff, &
                                                     t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, &
                                                     t_3c_overl_nnP_ic, t_3c_overl_nnP_ic_reflected, &
@@ -1462,7 +1462,7 @@ CONTAINS
                   CALL allocate_matrices_gw_im_time(gw_corr_lev_occ, gw_corr_lev_virt, homo, nmo, &
                                                     num_integ_points_freq, unit_nr, &
                                                     RI_blk_sizes, do_ic_model, &
-                                                    para_env, fm_mat_W_tau, fm_mat_Q, &
+                                                    para_env, fm_mat_W, fm_mat_Q, &
                                                     mo_coeff, &
                                                     t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, &
                                                     t_3c_overl_nnP_ic, t_3c_overl_nnP_ic_reflected, &
@@ -1788,7 +1788,7 @@ CONTAINS
                                              para_env_RPA, Erpa, tau_tj, tj, wj, weights_cos_tf_w_to_t, wkp_W, do_gw_im_time, &
                                              do_ri_Sigma_x, do_kpoints_from_Gamma, do_kpoints_cubic_RPA, cfm_mat_W_kp_tau, &
                                              cfm_mat_Q, ikp_local, mat_P_omega, mat_P_omega_kp, qs_env, eps_filter_im_time, &
-                                             kpoints, fm_mat_L, fm_mat_W_tau, fm_mat_RI_global_work, mat_SinvVSinv)
+                                             kpoints, fm_mat_L, fm_mat_W, fm_mat_RI_global_work, mat_SinvVSinv)
                ELSE
                   CALL RPA_postprocessing_nokp(dimen_RI_red, trace_Qomega, fm_mat_Q, para_env_RPA, Erpa, wj(jquad))
                END IF
@@ -1804,10 +1804,10 @@ CONTAINS
                IF (my_open_shell) THEN
                   CALL GW_matrix_operations(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI_red, gw_corr_lev_occ, &
                                             gw_corr_lev_virt, homo, jquad, nmo, num_fit_points, num_integ_points, &
-                                            do_bse, do_im_time, do_periodic, &
+                                            do_bse, do_im_time, do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                             first_cycle_periodic_correction, fermi_level_offset, &
                                             omega, Eigenval, delta_corr, tau_tj, tj, vec_omega_fit_gw, &
-                                            vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W_tau, fm_mat_L, &
+                                            vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W, fm_mat_L, &
                                             fm_mat_Q, fm_mat_Q_static_bse, fm_mat_R_gw, fm_mat_S_gw, &
                                             fm_mat_S_gw_work, fm_mat_work, mo_coeff, para_env, &
                                             para_env_RPA, matrix_berry_im_mo_mo, matrix_berry_re_mo_mo, &
@@ -1817,10 +1817,10 @@ CONTAINS
                ELSE
                   CALL GW_matrix_operations(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI_red, gw_corr_lev_occ, &
                                             gw_corr_lev_virt, homo, jquad, nmo, num_fit_points, num_integ_points, &
-                                            do_bse, do_im_time, do_periodic, &
+                                            do_bse, do_im_time, do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                             first_cycle_periodic_correction, fermi_level_offset, &
                                             omega, Eigenval, delta_corr, tau_tj, tj, vec_omega_fit_gw, &
-                                            vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W_tau, fm_mat_L, &
+                                            vec_W_gw, wj, weights_cos_tf_w_to_t, fm_mat_W, fm_mat_L, &
                                             fm_mat_Q, fm_mat_Q_static_bse, fm_mat_R_gw, fm_mat_S_gw, &
                                             fm_mat_S_gw_work, fm_mat_work, mo_coeff, para_env, &
                                             para_env_RPA, matrix_berry_im_mo_mo, matrix_berry_re_mo_mo, &
@@ -1868,7 +1868,7 @@ CONTAINS
                                       weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
                                       fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
-                                      mo_coeff, fm_mat_W_tau, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
+                                      mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
                                       t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, &
                                       matrix_berry_im_mo_mo, &
                                       matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s, &
@@ -1892,7 +1892,7 @@ CONTAINS
                                       weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                       fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
                                       fm_mo_coeff_virt, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, &
-                                      mo_coeff, fm_mat_W_tau, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
+                                      mo_coeff, fm_mat_W, para_env, para_env_RPA, mat_dm, mat_SinvVSinv, &
                                       t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, matrix_berry_im_mo_mo, &
                                       matrix_berry_re_mo_mo, mat_greens_fct_occ, mat_greens_fct_virt, mat_W, matrix_s, &
                                       kpoints, mp2_env, qs_env, &
@@ -2013,7 +2013,7 @@ CONTAINS
          IF (my_do_gw) THEN
             IF (my_open_shell) THEN
                CALL deallocate_matrices_gw_im_time(weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, do_ic_model, &
-                                                   do_kpoints_cubic_RPA, fm_mat_W_tau, &
+                                                   do_kpoints_cubic_RPA, fm_mat_W, &
                                                    t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, &
                                                    mat_greens_fct_occ, &
                                                    mat_greens_fct_virt, &
@@ -2025,7 +2025,7 @@ CONTAINS
                                                    mat_greens_fct_occ_beta, mat_greens_fct_virt_beta)
             ELSE
                CALL deallocate_matrices_gw_im_time(weights_cos_tf_w_to_t, weights_sin_tf_t_to_w, do_ic_model, &
-                                                   do_kpoints_cubic_RPA, fm_mat_W_tau, &
+                                                   do_kpoints_cubic_RPA, fm_mat_W, &
                                                    t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, &
                                                    mat_greens_fct_occ, &
                                                    mat_greens_fct_virt, &
