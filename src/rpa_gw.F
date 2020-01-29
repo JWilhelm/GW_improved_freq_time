@@ -4822,8 +4822,12 @@ CONTAINS
                                               t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
 
                      END IF
-         
+        
+                     PRINT *, 'check 1'
+ 
                      CALL dbcsr_t_destroy(t_3c_ctr_RI)
+
+                     PRINT *, 'check 2'
 
                      ! divide the integration weight by 2, because the integration
                      ! is from -infty to +infty and not just 0 to +infty as for RPA
@@ -4836,6 +4840,8 @@ CONTAINS
 !                     vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
 !                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
 
+                     PRINT *, 'check 2a'
+
                      IF(do_occ) THEN
                      vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) = &
                         vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) - &
@@ -4847,6 +4853,8 @@ CONTAINS
                      END IF
 
                      DEALLOCATE(Sigma_c_gw_tmp)
+
+                     PRINT *, 'check 2c'
 
                   END DO
 
@@ -4861,6 +4869,8 @@ CONTAINS
          n = gw_corr_lev_occ
          vec_Sigma_c_gw(1:n,:,:) = - REAL(vec_Sigma_c_gw(1:n,:,:))*(1.0_dp, 0.0_dp)  &
                                    + AIMAG(vec_Sigma_c_gw(1:n,:,:))*(0.0_dp, 1.0_dp)
+
+         PRINT *, 'check 2d'
 
       ELSE
 
@@ -4898,27 +4908,29 @@ CONTAINS
    
          END DO ! jquad (tau)
 
-      END IF
-
-      ! Fourier transform from time to frequency
-      DO jquad = 1, num_fit_points
-
-         DO iquad = 1, num_integ_points
-
-            omega = tj(jquad)
-            tau = tau_tj(iquad)
-            weight_cos = weights_cos_tf_t_to_w(jquad, iquad)*COS(omega*tau)
-            weight_sin = weights_sin_tf_t_to_w(jquad, iquad)*SIN(omega*tau)
-
-            vec_Sigma_c_gw_cos_omega(:, jquad) = vec_Sigma_c_gw_cos_omega(:, jquad) + &
-                                                 weight_cos*vec_Sigma_c_gw_cos_tau(:, iquad)
-
-            vec_Sigma_c_gw_sin_omega(:, jquad) = vec_Sigma_c_gw_sin_omega(:, jquad) + &
-                                                 weight_sin*vec_Sigma_c_gw_sin_tau(:, iquad)
-
+         PRINT *, 'check 2e'
+   
+         ! Fourier transform from time to frequency
+         DO jquad = 1, num_fit_points
+   
+            DO iquad = 1, num_integ_points
+   
+               omega = tj(jquad)
+               tau = tau_tj(iquad)
+               weight_cos = weights_cos_tf_t_to_w(jquad, iquad)*COS(omega*tau)
+               weight_sin = weights_sin_tf_t_to_w(jquad, iquad)*SIN(omega*tau)
+   
+               vec_Sigma_c_gw_cos_omega(:, jquad) = vec_Sigma_c_gw_cos_omega(:, jquad) + &
+                                                    weight_cos*vec_Sigma_c_gw_cos_tau(:, iquad)
+   
+               vec_Sigma_c_gw_sin_omega(:, jquad) = vec_Sigma_c_gw_sin_omega(:, jquad) + &
+                                                    weight_sin*vec_Sigma_c_gw_sin_tau(:, iquad)
+   
+            END DO
+   
          END DO
 
-      END DO
+      END IF
 
       ! for occupied levels, we need the correlation self-energy for negative omega. Therefore, weight_sin
       ! should be computed with -omega, which results in an additional minus for vec_Sigma_c_gw_sin_omega:
