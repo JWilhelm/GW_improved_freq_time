@@ -4670,7 +4670,7 @@ CONTAINS
                                                             handle3, iquad, jquad, mo_end, &
                                                             mo_start, n_level_gw, n_level_gw_ref, &
                                                             unit_nr_prv, iw, n_1, n, real_imaginary
-      LOGICAL                                            :: memory_info, my_do_beta
+      LOGICAL                                            :: memory_info, my_do_beta, do_occ, do_virt
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
                                                             weight_cos, weight_i, weight_sin, omega_j, omega_diff, &
@@ -4765,6 +4765,9 @@ CONTAINS
 
                      n_level_gw = n_level_gw_ref - homo + gw_corr_lev_occ
 
+                     do_occ  = (n_level_gw_ref .LE. homo)
+                     do_virt = (n_level_gw_ref > homo)
+
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
 
@@ -4778,19 +4781,23 @@ CONTAINS
 !                                         do_occ  = (n_level_gw_ref .LE. homo), &
 !                                         do_virt = (n_level_gw_ref > homo) )
 
-                     CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
-                                           mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
-                                           Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
-                                           t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE., &
-                                           do_occ  = (n_level_gw_ref .LE. homo), &
-                                           do_virt = (n_level_gw_ref > homo) )
+                     IF(do_occ) THEN
+
+                        CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                              mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
+                                              Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                              t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
          
-                     CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
-                                           mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
-                                           Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
-                                           t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE., &
-                                           do_occ  = (n_level_gw_ref .LE. homo), &
-                                           do_virt = (n_level_gw_ref > homo) )
+                     END IF
+
+                     IF(do_virt) THEN
+
+                        CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                              mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
+                                              Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                              t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
+
+                     END IF
          
                      CALL dbcsr_t_destroy(t_3c_ctr_RI)
 
@@ -5019,7 +5026,7 @@ CONTAINS
    SUBROUTINE compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                mat_AO, mat_RI, prefac, &
                                vec_Sigma, mo_bounds, para_env, unit_nr, &
-                               t_3c_ctr_RI, t_3c_ctr_in, do_occ, do_virt)
+                               t_3c_ctr_RI, t_3c_ctr_in)
       TYPE(dbcsr_t_type), INTENT(INOUT)                  :: t_3c_overl_int_gw_AO, &
                                                             t_3c_overl_int_gw_RI
       TYPE(dbcsr_type), INTENT(IN)                       :: mat_AO, mat_RI
@@ -5029,13 +5036,13 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN)                                :: unit_nr
       TYPE(dbcsr_t_type), INTENT(INOUT), OPTIONAL        :: t_3c_ctr_RI
-      LOGICAL, INTENT(IN), OPTIONAL                      :: t_3c_ctr_in, do_occ, do_virt
+      LOGICAL, INTENT(IN), OPTIONAL                      :: t_3c_ctr_in
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_sigma_gw', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle
-      LOGICAL                                            :: t_3c_ctr_in_prv, do_occ_prv, do_virt_prv
+      LOGICAL                                            :: t_3c_ctr_in_prv
       TYPE(dbcsr_t_type)                                 :: t_3c_ctr_RI_prv, t_3c_overl_int_gw_copy, &
                                                             t_AO, t_RI
 
@@ -5045,18 +5052,6 @@ CONTAINS
          t_3c_ctr_in_prv = t_3c_ctr_in
       ELSE
          t_3c_ctr_in_prv = .FALSE.
-      ENDIF
-
-      IF (PRESENT(do_occ)) THEN
-         do_occ_prv = do_occ
-      ELSE
-         do_occ_prv = .TRUE.
-      ENDIF
-
-      IF (PRESENT(do_virt)) THEN
-         do_virt_prv = do_virt
-      ELSE
-         do_virt_prv = .TRUE.
       ENDIF
 
       IF (t_3c_ctr_in_prv) THEN
