@@ -1339,14 +1339,14 @@ CONTAINS
                                                             mat_M_P_munu_virt, mat_P_global_copy, &
                                                             mat_SinvVSinv
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER :: mat_greens_fct_occ, mat_greens_fct_occ_beta, &
-         mat_greens_fct_virt, mat_greens_fct_virt_beta, mat_W, matrix_berry_im_mo_mo, &
+         mat_greens_fct_virt, mat_greens_fct_virt_beta, matrix_berry_im_mo_mo, &
          matrix_berry_re_mo_mo
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: mat_P_omega, mat_P_omega_beta, &
                                                             mat_P_omega_kp
       TYPE(dbcsr_t_type) :: t_3c_overl_int_gw_AO, t_3c_overl_int_gw_AO_beta, t_3c_overl_int_gw_RI, &
          t_3c_overl_int_gw_RI_beta, t_3c_overl_nnP_ic, t_3c_overl_nnP_ic_beta, &
          t_3c_overl_nnP_ic_reflected, t_3c_overl_nnP_ic_reflected_beta
-      TYPE(dbcsr_type), POINTER                          :: mat_work
+      TYPE(dbcsr_type), POINTER                          :: mat_work, mat_W
       TYPE(integ_mat_buffer_type), ALLOCATABLE, &
          DIMENSION(:)                                    :: buffer_rec, buffer_rec_axk, &
                                                             buffer_rec_beta, buffer_send, &
