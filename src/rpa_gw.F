@@ -1001,18 +1001,12 @@ CONTAINS
             END DO
          END DO
 
-         PRINT *, 'check 1'
-
          ! multiply with L from the left and the right to get the screened Coulomb interaction
          CALL cp_gemm('T', 'N', dimen_RI, dimen_RI, dimen_RI, 1.0_dp, fm_mat_L(1, 1)%matrix, fm_mat_Q, &
                       0.0_dp, fm_mat_work)
 
-         PRINT *, 'check 2'
-
          CALL cp_gemm('N', 'N', dimen_RI, dimen_RI, dimen_RI, 1.0_dp, fm_mat_work, fm_mat_L(1, 1)%matrix, &
                       0.0_dp, fm_mat_Q)
-
-         PRINT *, 'check 3'
 
          IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
@@ -1022,8 +1016,6 @@ CONTAINS
 
             ! Fourier transform from w to t
             DO iquad = 1, num_integ_points
-   
-               PRINT *, 'check 4 iquad =', iquad, 'jquad =', jquad
    
                omega = tj(jquad)
                tau = tau_tj(iquad)
@@ -4682,10 +4674,11 @@ CONTAINS
       REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
                                                             sign_occ_virt, t_i_Clenshaw, tau, &
                                                             weight_cos, weight_i, weight_sin, omega_j, omega_diff, &
-                                          Sigma_c_gw_tmp, omega_sum, weight
+                                           omega_sum, weight
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
          vec_Sigma_c_gw_sin_omega, vec_Sigma_c_gw_sin_tau
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:) :: Sigma_c_gw_tmp
       TYPE(dbcsr_t_type)                                 :: t_3c_ctr_RI
 
       CALL timeset(routineN, handle)
@@ -4724,6 +4717,8 @@ CONTAINS
       delta_corr_omega(:, :) = (0.0_dp, 0.0_dp)
 
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
+
+         ALLOCATE(Sigma_c_gw_tmp(1))
 
          ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
          ! w' is stored in tj with entries > 0. Therefore, we split the integration in two parts for w' > 0 / w' = tj(jquad)  
@@ -4766,9 +4761,9 @@ CONTAINS
                      CALL close_file(iw)
                   END IF
 
-                  DO n_level_gw = 1, gw_corr_lev_tot
+                  DO n_level_gw_ref = mo_start, mo_end
 
-                     n_level_gw_ref = n_level_gw+homo-gw_corr_lev_occ
+                     n_level_gw = n_level_gw_ref - homo + gw_corr_lev_occ
 
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
@@ -4783,6 +4778,22 @@ CONTAINS
 !                                         do_occ  = (n_level_gw_ref .LE. homo), &
 !                                         do_virt = (n_level_gw_ref > homo) )
 
+                     CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                           mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
+                                           Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                           t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE., &
+                                           do_occ  = (n_level_gw_ref .LE. homo), &
+                                           do_virt = (n_level_gw_ref > homo) )
+         
+                     CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                           mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
+                                           Sigma_c_gw_tmp, [n_level_gw_ref, n_level_gw_ref], para_env, unit_nr_prv, &
+                                           t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE., &
+                                           do_occ  = (n_level_gw_ref .LE. homo), &
+                                           do_virt = (n_level_gw_ref > homo) )
+         
+                     CALL dbcsr_t_destroy(t_3c_ctr_RI)
+
                      ! divide the integration weight by 2, because the integration
                      ! is from -infty to +infty and not just 0 to +infty as for RPA
                      IF(jquad .LE. num_integ_points_freq) THEN
@@ -4792,7 +4803,7 @@ CONTAINS
                      END IF
 
                      vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
-                                                            weight/twopi*re_im*Sigma_c_gw_tmp
+                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
 
                   END DO
 
@@ -4807,6 +4818,8 @@ CONTAINS
          n = gw_corr_lev_occ
          vec_Sigma_c_gw(1:n,:,:) = - REAL(vec_Sigma_c_gw(1:n,:,:))*(1.0_dp, 0.0_dp)  &
                                    + AIMAG(vec_Sigma_c_gw(1:n,:,:))*(0.0_dp, 1.0_dp)
+
+         DEALLOCATE(Sigma_c_gw_tmp)
 
       ELSE
 
@@ -5006,7 +5019,7 @@ CONTAINS
    SUBROUTINE compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                mat_AO, mat_RI, prefac, &
                                vec_Sigma, mo_bounds, para_env, unit_nr, &
-                               t_3c_ctr_RI, t_3c_ctr_in)
+                               t_3c_ctr_RI, t_3c_ctr_in, do_occ, do_virt)
       TYPE(dbcsr_t_type), INTENT(INOUT)                  :: t_3c_overl_int_gw_AO, &
                                                             t_3c_overl_int_gw_RI
       TYPE(dbcsr_type), INTENT(IN)                       :: mat_AO, mat_RI
@@ -5016,13 +5029,13 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN)                                :: unit_nr
       TYPE(dbcsr_t_type), INTENT(INOUT), OPTIONAL        :: t_3c_ctr_RI
-      LOGICAL, INTENT(IN), OPTIONAL                      :: t_3c_ctr_in
+      LOGICAL, INTENT(IN), OPTIONAL                      :: t_3c_ctr_in, do_occ, do_virt
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_sigma_gw', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle
-      LOGICAL                                            :: t_3c_ctr_in_prv
+      LOGICAL                                            :: t_3c_ctr_in_prv, do_occ_prv, do_virt_prv
       TYPE(dbcsr_t_type)                                 :: t_3c_ctr_RI_prv, t_3c_overl_int_gw_copy, &
                                                             t_AO, t_RI
 
@@ -5032,6 +5045,18 @@ CONTAINS
          t_3c_ctr_in_prv = t_3c_ctr_in
       ELSE
          t_3c_ctr_in_prv = .FALSE.
+      ENDIF
+
+      IF (PRESENT(do_occ)) THEN
+         do_occ_prv = do_occ
+      ELSE
+         do_occ_prv = .TRUE.
+      ENDIF
+
+      IF (PRESENT(do_virt)) THEN
+         do_virt_prv = do_virt
+      ELSE
+         do_virt_prv = .TRUE.
       ENDIF
 
       IF (t_3c_ctr_in_prv) THEN
