@@ -1860,7 +1860,8 @@ CONTAINS
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
                                       nmo, num_fit_points, num_integ_points, num_integ_points_freq, &
                                       num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
-                                      do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
+                                      do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
+                                      do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
                                       Eigenval_last, Eigenval_scf, tau_tj, tj, &
@@ -1884,7 +1885,8 @@ CONTAINS
                                       gw_corr_lev_tot, gw_corr_lev_virt, homo, &
                                       nmo, num_fit_points, num_integ_points, num_integ_points_freq, &
                                       num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
-                                      do_periodic, do_ri_Sigma_x, first_cycle_periodic_correction, &
+                                      do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
+                                      do_ri_Sigma_x, first_cycle_periodic_correction, &
                                       e_fermi, eps_filter, &
                                       fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
                                       Eigenval_last, Eigenval_scf, tau_tj, tj, &
