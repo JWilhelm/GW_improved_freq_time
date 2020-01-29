@@ -4742,6 +4742,8 @@ CONTAINS
                   omega_diff = vec_omega_fit_gw(iquad) + tj(jquad-num_integ_points_freq)
                END IF
 
+                     PRINT *, 'jquad =', jquad, 'iquad =', iquad
+
                DO real_imaginary = 1, 2
 
                   ! compute Green's function G(i*(w-/+w')) and store it to fm_scaled_dm_occ_tau and 
@@ -4780,6 +4782,12 @@ CONTAINS
 !                                         Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
 !                                         do_occ  = (n_level_gw_ref .LE. homo), &
 !                                         do_virt = (n_level_gw_ref > homo) )
+
+                      ! dummy call to initialize all the matrices
+                      CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                            mat_greens_fct_occ, mat_W, [0.0_dp, 0.0_dp], &
+                                            vec_Sigma_c_gw_neg_tau(:, jquad), [mo_start, mo_end], para_env, unit_nr_prv, &
+                                            t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE.)
 
                      IF(do_occ) THEN
 
