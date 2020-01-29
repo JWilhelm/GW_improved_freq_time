@@ -1249,7 +1249,7 @@ CONTAINS
                                 do_periodic, do_gw_im_time_mix_minimax_clenshaw, do_ri_Sigma_x, &
                                 first_cycle_periodic_correction, e_fermi, eps_filter, &
                                 fermi_level_offset, stabilize_exp, delta_corr, Eigenval, &
-                                Eigenval_last, Eigenval_scf, tau_tj, tj, &
+                                Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                 vec_omega_fit_gw, vec_Sigma_x_gw, ic_corr_list, &
                                 weights_cos_tf_t_to_w, weights_sin_tf_t_to_w, &
                                 fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, fm_mo_coeff_occ, &
@@ -1279,7 +1279,7 @@ CONTAINS
          INTENT(INOUT)                                   :: delta_corr
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: Eigenval
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(INOUT)                                   :: Eigenval_last, Eigenval_scf, tau_tj, tj, &
+         INTENT(INOUT)                                   :: Eigenval_last, Eigenval_scf, tau_tj, tj, wj, &
                                                             vec_omega_fit_gw
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
          INTENT(INOUT)                                   :: vec_Sigma_x_gw
@@ -1350,10 +1350,10 @@ CONTAINS
       IF (do_im_time .AND. .NOT. do_kpoints_cubic_RPA) THEN
          num_points_corr = mp2_env%ri_g0w0%num_omega_points
 
-         CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+         CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, wj, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
-                                             fm_scaled_dm_virt_tau, Eigenval, eps_filter, &
+                                             fm_scaled_dm_virt_tau, Eigenval, vec_omega_fit_gw, eps_filter, &
                                              e_fermi, fermi_level_offset, fm_mat_W, &
                                              gw_corr_lev_tot, gw_corr_lev_occ, gw_corr_lev_virt, homo, &
                                              count_ev_sc_GW, &
@@ -1368,10 +1368,10 @@ CONTAINS
 
          IF (my_open_shell) THEN
 
-            CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq,nmo, tau_tj, tj, &
+            CALL compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq,nmo, tau_tj, tj, wj, &
                                                 matrix_s, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, fm_mo_coeff_occ_scaled, &
                                                 fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
-                                                fm_scaled_dm_virt_tau, Eigenval_beta, eps_filter, &
+                                                fm_scaled_dm_virt_tau, Eigenval_beta, vec_omega_fit_gw, eps_filter, &
                                                 e_fermi_beta, fermi_level_offset, fm_mat_W, &
                                                 gw_corr_lev_tot, gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
                                                 count_ev_sc_GW, &
@@ -4614,7 +4614,7 @@ CONTAINS
 !> \param unit_nr ...
 !> \param do_beta ...
 ! **************************************************************************************************
-   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, &
+   SUBROUTINE compute_self_energy_cubic_gw(num_integ_points, num_integ_points_freq, nmo, tau_tj, tj, wj, &
                                              matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
                                              fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, &
                                              fm_scaled_dm_virt_tau, Eigenval, vec_omega_fit_gw, eps_filter, &
@@ -4630,7 +4630,7 @@ CONTAINS
                                              do_ri_Sigma_x, vec_Sigma_x_gw, unit_nr, do_beta)
       INTEGER, INTENT(IN)                                :: num_integ_points, nmo, num_integ_points_freq
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
-         INTENT(IN)                                      :: tau_tj, tj
+         INTENT(IN)                                      :: tau_tj, tj, wj
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: &
                                                             matrix_s
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
