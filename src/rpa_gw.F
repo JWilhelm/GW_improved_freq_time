@@ -4830,8 +4830,6 @@ CONTAINS
 
                      Sigma_c_gw_tmp = 0.0_dp
 
-                     PRINT *, 'CHECK 1 mepos =', para_env%mepos
-
                      ! 3-center * W(iw')
                      CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                            mat_greens_fct_occ, mat_W, [1.0_dp, 0.0_dp], &
@@ -4840,29 +4838,23 @@ CONTAINS
 
                      IF(do_occ) THEN
 
-                        PRINT *, 'CHECK 2 mepos =', para_env%mepos
                         ! 3-center * G(i(w-w')) for an occupied level n (other Fermi level than virtuals)
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
                                               Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
                                               t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
-                        PRINT *, 'CHECK 3 mepos =', para_env%mepos
 
                      END IF
 
                      IF(do_virt) THEN
-                        PRINT *, 'CHECK 4 mepos =', para_env%mepos
                         ! 3-center * G(i(w-w')) for a virtual level n (other Fermi level than occupieds)
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
                                               Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
                                               t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.TRUE.)
-                        PRINT *, 'CHECK 5 mepos =', para_env%mepos
                      END IF
        
                      CALL dbcsr_t_destroy(t_3c_ctr_RI)
-
-                     PRINT *, 'CHECK 6 mepos =', para_env%mepos
 
                      ! divide the integration weight by 2, because the integration
                      ! is from -infty to +infty and not just 0 to +infty as for RPA
@@ -4871,8 +4863,6 @@ CONTAINS
                      ELSE
                         weight = wj(jquad-num_integ_points_freq)/2.0_dp
                      END IF
-
-                     PRINT *, 'CHECK 7 mepos =', para_env%mepos
 
                      IF(do_occ) THEN
                      vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) = &
@@ -4884,11 +4874,7 @@ CONTAINS
                         weight/twopi*re_im*Sigma_c_gw_tmp(:)
                      END IF
 
-                     PRINT *, 'CHECK 8 mepos =', para_env%mepos
-
                      DEALLOCATE(Sigma_c_gw_tmp)
-
-                     PRINT *, 'CHECK 9 mepos =', para_env%mepos
 
                   END DO
 
@@ -5221,8 +5207,6 @@ CONTAINS
          CPASSERT(found)
          CALL dbcsr_t_get_block(t3c_2, ind, block_2, found)
          IF (.NOT. found) CYCLE
-         IF(boff(3) +  bsize(3) - 1 < mo_bounds(1)) CYCLE
-         IF(boff(3) > mo_bounds(2)) CYCLE
 
          IF (boff(3) < mo_bounds(1)) THEN
             n_start_block = mo_bounds(1) - boff(3) + 1
@@ -5239,8 +5223,6 @@ CONTAINS
             n_end_block = bsize(3)
             n_end = boff(3) + bsize(3) - mo_bounds(1)
          ENDIF
-
-         IF(n_start > n_end .OR. n_start < 1 .OR. n_end > 10 .OR. n_end < 1) PRINT *, 'n_start =', n_start, 'n_end =', n_end
 
          trace_shape(1) = SIZE(block_1, 1)*SIZE(block_1, 2)
          vec_Sigma(n_start:n_end) = &
