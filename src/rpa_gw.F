@@ -1499,23 +1499,24 @@ CONTAINS
          END IF
 
          PRINT *, ''
-         PRINT *, 'vec_gw_energ =', vec_gw_energ
+         PRINT *, 'BEFORE'
+         PRINT *, ''
          PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
          PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
          PRINT *, 'Eigenval =', Eigenval
          PRINT *, 'fermi_level_offset =', fermi_level_offset
+         PRINT *, 'mp2_env%ri_g0w0%analytic_continuation =', mp2_env%ri_g0w0%analytic_continuation
+         PRINT *, 'num_poles =', num_poles
+         PRINT *, 'crossing_search =', crossing_search
+         PRINT *, 'num_fit_points =', num_fit_points
+         PRINT *, 'mp2_env%ri_g0w0%nparam_pade =', mp2_env%ri_g0w0%nparam_pade
          PRINT *, ''
          PRINT *, ''
          PRINT *, ''
          PRINT *, ''
          PRINT *, ''
          PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
+         PRINT *, 'DIFF 2'
          PRINT *, ''
 
          ! fit the self-energy on imaginary frequency axis and evaluate the fit on the MO energy of the SCF
@@ -1530,14 +1531,18 @@ CONTAINS
                                                mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                                Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, num_poles, &
                                                num_fit_points, max_iter_fit, crossing_search, homo, check_fit, stop_crit, &
-                                               fermi_level_offset, do_im_time)
+                                               fermi_level_offset, &
+                                               do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
+
             CASE (gw_pade_approx)
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                       z_value, m_value, vec_Sigma_c_gw(:, :, ikp), &
                                       mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                       Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, mp2_env%ri_g0w0%nparam_pade, &
                                       num_fit_points, crossing_search, homo, check_fit, &
-                                      fermi_level_offset, do_im_time)
+                                      fermi_level_offset, &
+                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
+
 
             CASE DEFAULT
                CPABORT("Only two-model and Pade approximation are implemented.")
@@ -1569,6 +1574,27 @@ CONTAINS
             END IF
 
          END DO ! n_level_gw
+
+         PRINT *, ''
+         PRINT *, 'AFTER'
+         PRINT *, ''
+         PRINT *, 'vec_gw_energ =', vec_gw_energ
+         PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
+         PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
+         PRINT *, 'Eigenval =', Eigenval
+         PRINT *, 'fermi_level_offset =', fermi_level_offset
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+         PRINT *, ''
+
 
          CALL mp_sum(vec_gw_energ_error_fit, para_env%group)
          CALL mp_sum(vec_gw_energ, para_env%group)
