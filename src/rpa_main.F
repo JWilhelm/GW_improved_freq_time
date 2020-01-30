@@ -1834,7 +1834,7 @@ CONTAINS
 
          IF (.NOT. do_ri_sos_laplace_mp2) THEN
             Erpa = Erpa/(pi*2.0_dp)
-            IF (do_minimax_quad) Erpa = Erpa/2.0_dp
+            IF (do_minimax_quad .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw)) Erpa = Erpa/2.0_dp
          END IF
 
          IF (mp2_env%ri_rpa%do_ri_axk) THEN
