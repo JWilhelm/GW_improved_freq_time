@@ -400,16 +400,6 @@ CONTAINS
            vec_omega_fit_gw(jquad) = vec_omega_gw(num_integ_points_freq-(jquad-1)*frac)
          END DO
 
-!         PRINT *, 'vec_omega_fit_gw'
-!         DO jquad = 1, num_fit_points
-!           PRINT *, jquad, vec_omega_fit_gw(jquad)
-!         END DO
-!
-!         PRINT *, 'vec_omega'
-!         DO jquad = 1, 100
-!           PRINT *, jquad, vec_omega_gw(jquad)
-!         END DO
-
       ELSE
 
          IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
@@ -1040,16 +1030,17 @@ CONTAINS
             END DO
          END DO
 
+!JW 2del
 ! BEGIN PRINTING
-         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                        file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,1)
-         CALL close_file(iw)
-
-         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-                        file_position="APPEND")
-         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,2)
-         CALL close_file(iw)
+!         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+!                        file_position="APPEND")
+!         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,1)
+!         CALL close_file(iw)
+!
+!         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
+!                        file_position="APPEND")
+!         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,2)
+!         CALL close_file(iw)
 ! END PRINTING
 
 
@@ -1498,27 +1489,6 @@ CONTAINS
                                         ikp, iter_ev_sc, my_open_shell)
          END IF
 
-         PRINT *, ''
-         PRINT *, 'BEFORE'
-         PRINT *, ''
-         PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
-         PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
-         PRINT *, 'Eigenval =', Eigenval
-         PRINT *, 'fermi_level_offset =', fermi_level_offset
-         PRINT *, 'mp2_env%ri_g0w0%analytic_continuation =', mp2_env%ri_g0w0%analytic_continuation
-         PRINT *, 'num_poles =', num_poles
-         PRINT *, 'crossing_search =', crossing_search
-         PRINT *, 'num_fit_points =', num_fit_points
-         PRINT *, 'mp2_env%ri_g0w0%nparam_pade =', mp2_env%ri_g0w0%nparam_pade
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, 'DIFF 2'
-         PRINT *, ''
-
          ! fit the self-energy on imaginary frequency axis and evaluate the fit on the MO energy of the SCF
          DO n_level_gw = 1, gw_corr_lev_tot
             ! processes perform different fits
@@ -1574,27 +1544,6 @@ CONTAINS
             END IF
 
          END DO ! n_level_gw
-
-         PRINT *, ''
-         PRINT *, 'AFTER'
-         PRINT *, ''
-         PRINT *, 'vec_gw_energ =', vec_gw_energ
-         PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
-         PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
-         PRINT *, 'Eigenval =', Eigenval
-         PRINT *, 'fermi_level_offset =', fermi_level_offset
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, ''
-
 
          CALL mp_sum(vec_gw_energ_error_fit, para_env%group)
          CALL mp_sum(vec_gw_energ, para_env%group)
@@ -4814,9 +4763,6 @@ CONTAINS
       ALLOCATE (delta_corr_omega(1 + homo - gw_corr_lev_occ:homo + gw_corr_lev_virt, num_integ_points))
       delta_corr_omega(:, :) = (0.0_dp, 0.0_dp)
 
-! JW 2del     PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
-! J" 2de!      PRINT *, 'tj               =', tj
-
       IF(do_gw_im_time_mix_minimax_clenshaw) THEN
 
          ! we perform an integration Sigma(iw) = int dw' G(i(w-w')) W(iw') here with jquad: omega' amd iquad: omega
@@ -4840,8 +4786,6 @@ CONTAINS
                ELSE
                   omega_diff = vec_omega_fit_gw(iquad) + tj(jquad-num_integ_points_freq)
                END IF
-
-!JW 2del                     PRINT *, 'jquad =', jquad, 'iquad =', iquad
 
                DO real_imaginary = 1, 2
 
@@ -4879,44 +4823,16 @@ CONTAINS
                         ALLOCATE(Sigma_c_gw_tmp(gw_corr_lev_virt))
                      END IF
 
-
-!                  DO n_level_gw_ref = mo_start, mo_end
-!
-!                     n_level_gw = n_level_gw_ref - homo + gw_corr_lev_occ
-!
-!                     do_occ  = (n_level_gw_ref .LE. homo)
-!                     do_virt = (n_level_gw_ref > homo)
-
                      IF(real_imaginary==1) re_im = (1.0_dp, 0.0_dp)
                      IF(real_imaginary==2) re_im = (0.0_dp, 1.0_dp)
 
                      Sigma_c_gw_tmp = 0.0_dp
 
-! JW THAT NEEDS TO BE CHANGED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!                     CALL dbcsr_cubic_GW(n_level_gw, mat_W, mat_greens_fct_occ, mat_greens_fct_virt, &
-!                                         mat_3c_overl_int_gw, mat_contr_gf_occ, mat_contr_gf_virt, mat_contr_W, &
-!                                         Sigma_c_gw_tmp, Sigma_c_gw_tmp, &
-!                                         do_occ  = (n_level_gw_ref .LE. homo), &
-!                                         do_virt = (n_level_gw_ref > homo) )
-
-!JW 2del                      IF(i_occ_virt == 1 .AND. jquad == 1 .AND. iquad == 1) THEN
-!
-!                      PRINT *, ''
-!                      PRINT *, 'mat_greens_fct_occ ='
-!                      PRINT *, ''
-!                      CALL dbcsr_print(mat_greens_fct_occ)
-!                      PRINT *, ''
-!                      PRINT *, 'mat_W ='
-!                      PRINT *, ''
-!                      CALL dbcsr_print(mat_W)
-!                      END IF
-
-                      ! dummy call to initialize all the matrices
-                      CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
-                                            mat_greens_fct_occ, mat_W, [1.0_dp, 0.0_dp], &
-                                            vec_Sigma_c_gw_neg_tau(:, jquad), [mo_start, mo_end], para_env, unit_nr_prv, &
-                                            t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE.)
+                     ! dummy call to initialize all the matrices
+                     CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
+                                           mat_greens_fct_occ, mat_W, [1.0_dp, 0.0_dp], &
+                                           vec_Sigma_c_gw_neg_tau(:, jquad), [mo_start, mo_end], para_env, unit_nr_prv, &
+                                           t_3c_ctr_RI=t_3c_ctr_RI, t_3c_ctr_in=.FALSE.)
 
                      IF(do_occ) THEN
 
@@ -4946,13 +4862,6 @@ CONTAINS
                         weight = wj(jquad-num_integ_points_freq)/2.0_dp
                      END IF
 
-! JW 2del                    vec_Sigma_c_gw(n_level_gw, iquad, 1) = vec_Sigma_c_gw(n_level_gw, iquad, 1) - &
-!                                                            weight/twopi*re_im*Sigma_c_gw_tmp(1)
-!
-!                     PRINT *, 'jquad =', jquad, 'iquad =', iquad, 'occ/virt =', i_occ_virt, 're/im =', real_imaginary, &
-!                              'Sigma_c_gw_tmp =', Sigma_c_gw_tmp
-                     
-
                      IF(do_occ) THEN
                      vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) = &
                         vec_Sigma_c_gw(1:gw_corr_lev_occ, iquad, 1) - &
@@ -4978,8 +4887,6 @@ CONTAINS
          n = gw_corr_lev_occ
          vec_Sigma_c_gw(1:n,:,:) = - REAL(vec_Sigma_c_gw(1:n,:,:))*(1.0_dp, 0.0_dp)  &
                                    + AIMAG(vec_Sigma_c_gw(1:n,:,:))*(0.0_dp, 1.0_dp)
-
-         PRINT *, 'vec_Sigma_c_gw =', vec_Sigma_c_gw
 
       ELSE
 
@@ -5509,13 +5416,6 @@ CONTAINS
       CALL cp_gemm(transa="N", transb="T", m=nmo, n=nmo, k=nmo, alpha=1.0_dp, &
                    matrix_a=fm_mo_coeff, matrix_b=fm_mo_coeff_virt_scaled, beta=0.0_dp, &
                    matrix_c=fm_scaled_dm_virt_tau)
-
-!JW 2del      PRINT *, ''
-!      PRINT *, 'e_fermi_offset =', fermi_level_offset
-!      PRINT *, 'Eigenval =', Eigenval(1:5)
-!      PRINT *, 'combined_quad =', combined_quad
-!      PRINT *, 'omega =', omega
-!      PRINT *, ''
 
       IF (combined_quad == 1 .AND. count_ev_sc_GW == 1) THEN
 
