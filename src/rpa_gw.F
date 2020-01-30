@@ -4779,6 +4779,8 @@ CONTAINS
                CALL copy_fm_to_dbcsr(fm_mat_W(jquad-num_integ_points_freq)%matrix, mat_W, keep_sparsity=.FALSE.)
             END IF
 
+            PRINT *, 'jquad =', jquad , '/', 2*num_integ_points_freq
+
             DO iquad = 1, num_fit_points
 
                IF(jquad .LE. num_integ_points_freq) THEN
@@ -4828,7 +4830,7 @@ CONTAINS
 
                      Sigma_c_gw_tmp = 0.0_dp
 
-                     ! dummy call to initialize all the matrices
+                     ! 3-center * W(iw')
                      CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                            mat_greens_fct_occ, mat_W, [1.0_dp, 0.0_dp], &
                                            vec_Sigma_c_gw_neg_tau(:, jquad), [mo_start, mo_end], para_env, unit_nr_prv, &
@@ -4836,6 +4838,7 @@ CONTAINS
 
                      IF(do_occ) THEN
 
+                        ! 3-center * G(i(w-w')) for an occupied level n (other Fermi level than virtuals)
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_occ, mat_W, [1.0_dp, -1.0_dp], &
                                               Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
@@ -4845,6 +4848,7 @@ CONTAINS
 
                      IF(do_virt) THEN
 
+                        ! 3-center * G(i(w-w')) for a virtual level n (other Fermi level than occupieds)
                         CALL compute_sigma_gw(t_3c_overl_int_gw_AO, t_3c_overl_int_gw_RI, &
                                               mat_greens_fct_virt, mat_W, [1.0_dp, 1.0_dp], &
                                               Sigma_c_gw_tmp, [mo_start, mo_end], para_env, unit_nr_prv, &
