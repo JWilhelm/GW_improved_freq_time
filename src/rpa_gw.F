@@ -5061,10 +5061,6 @@ CONTAINS
       END IF
 
       DEALLOCATE (vec_Sigma_c_gw_pos_tau)
-      PRINT *, ''
-      PRINT *, 'mepos =', para_env%mepos, 'vec_Sigma_c_gw_neg_tau =', vec_Sigma_c_gw_neg_tau*27.211_dp
-      PRINT *, ''
-      PRINT *, ''
       DEALLOCATE (vec_Sigma_c_gw_neg_tau)
       DEALLOCATE (vec_Sigma_c_gw_cos_tau)
       DEALLOCATE (vec_Sigma_c_gw_sin_tau)
