@@ -376,11 +376,11 @@ CONTAINS
       END DO
 
       IF(do_gw_im_time_mix_minimax_clenshaw .AND. &
-         num_fit_points > mp2_env%ri_g0w0%num_freq_points_sigma) THEN
+         num_fit_points > mp2_env%ri_g0w0%num_integ_points_freq) THEN
 
-        frac = MAX(num_fit_points/mp2_env%ri_g0w0%num_freq_points_sigma, 1)
+        frac = MAX(num_fit_points/mp2_env%ri_g0w0%num_integ_points_freq, 1)
 
-        num_fit_points = mp2_env%ri_g0w0%num_freq_points_sigma
+        num_fit_points = mp2_env%ri_g0w0%num_integ_points_freq
 
          IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
             IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
