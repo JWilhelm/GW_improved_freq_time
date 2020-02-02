@@ -375,8 +375,6 @@ CONTAINS
          END IF
       END DO
 
-      PRINT *, 'num_fit_points =', num_fit_points
-
       IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
          IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
             IF (unit_nr > 0) &
@@ -398,8 +396,6 @@ CONTAINS
             vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
          END IF
       END DO
-
-      PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
 
       DEALLOCATE (vec_omega_gw)
 
