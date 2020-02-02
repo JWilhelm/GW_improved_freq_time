@@ -4779,7 +4779,7 @@ CONTAINS
                CALL copy_fm_to_dbcsr(fm_mat_W(jquad-num_integ_points_freq)%matrix, mat_W, keep_sparsity=.FALSE.)
             END IF
 
-            PRINT *, 'jquad =', jquad , '/', 2*num_integ_points_freq
+            IF(para_env%mepos == 0) PRINT *, 'jquad =', jquad , '/', 2*num_integ_points_freq
 
             DO iquad = 1, num_fit_points
 
