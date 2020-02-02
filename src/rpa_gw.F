@@ -375,56 +375,31 @@ CONTAINS
          END IF
       END DO
 
-      IF(do_gw_im_time_mix_minimax_clenshaw .AND. &
-         num_fit_points > mp2_env%ri_g0w0%num_integ_points_freq) THEN
+      PRINT *, 'num_fit_points =', num_fit_points
 
-        frac = MAX(num_fit_points/mp2_env%ri_g0w0%num_integ_points_freq, 1)
-
-        num_fit_points = mp2_env%ri_g0w0%num_integ_points_freq
-
-         IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
-            IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
-               IF (unit_nr > 0) &
-                  CPWARN("Pade approximation: more parameters than data points. Reset # of parameters.")
-               mp2_env%ri_g0w0%nparam_pade = num_fit_points
-               IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T74,I7)") &
-                  "Number of pade parameters:", mp2_env%ri_g0w0%nparam_pade
-            ENDIF
+      IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
+         IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
+            IF (unit_nr > 0) &
+               CPWARN("Pade approximation: more parameters than data points. Reset # of parameters.")
+            mp2_env%ri_g0w0%nparam_pade = num_fit_points
+            IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T74,I7)") &
+               "Number of pade parameters:", mp2_env%ri_g0w0%nparam_pade
          ENDIF
-
-         ! create new arrays containing omega values at which we calculate vec_Sigma_c_gw
-         ALLOCATE (vec_omega_fit_gw(num_fit_points))
-
-         ! fill the omega vector with frequencies, where we calculate the self-energy
-         DO jquad = 1,  num_fit_points
-           vec_omega_fit_gw(jquad) = vec_omega_gw(num_integ_points_freq-(jquad-1)*frac)
-         END DO
-
-      ELSE
-
-         IF (mp2_env%ri_g0w0%analytic_continuation == gw_pade_approx) THEN
-            IF (mp2_env%ri_g0w0%nparam_pade > num_fit_points) THEN
-               IF (unit_nr > 0) &
-                  CPWARN("Pade approximation: more parameters than data points. Reset # of parameters.")
-               mp2_env%ri_g0w0%nparam_pade = num_fit_points
-               IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T74,I7)") &
-                  "Number of pade parameters:", mp2_env%ri_g0w0%nparam_pade
-            ENDIF
-         ENDIF
+      ENDIF
    
-         ! create new arrays containing omega values at which we calculate vec_Sigma_c_gw
-         ALLOCATE (vec_omega_fit_gw(num_fit_points))
+      ! create new arrays containing omega values at which we calculate vec_Sigma_c_gw
+      ALLOCATE (vec_omega_fit_gw(num_fit_points))
    
-         ! fill the omega vector with frequencies, where we calculate the self-energy
-         iquad = 0
-         DO jquad = 1, num_integ_points_freq
-            IF (vec_omega_gw(jquad) < omega_max_fit) THEN
-               iquad = iquad + 1
-               vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
-            END IF
-         END DO
+      ! fill the omega vector with frequencies, where we calculate the self-energy
+      iquad = 0
+      DO jquad = 1, num_integ_points_freq
+         IF (vec_omega_gw(jquad) < omega_max_fit) THEN
+            iquad = iquad + 1
+            vec_omega_fit_gw(iquad) = vec_omega_gw(jquad)
+         END IF
+      END DO
 
-      END IF
+      PRINT *, 'vec_omega_fit_gw =', vec_omega_fit_gw
 
       DEALLOCATE (vec_omega_gw)
 
@@ -3598,6 +3573,8 @@ CONTAINS
             vec_omega_fit_gw_sign_reorder(jquad) = vec_omega_fit_gw_sign(num_fit_points - jquad + 1)
          ENDDO
       ENDIF
+
+      PRINT *, 'num_fit_points =', num_fit_points, 'vec_omega_fit_gw_sign_reorder =', vec_omega_fit_gw_sign_reorder
 
       !*** evaluate parameters for pade approximation
       ALLOCATE (coeff_pade(nparam_pade))

@@ -1375,6 +1375,7 @@ CONTAINS
       do_kpoints_cubic_RPA = mp2_env%ri_rpa_im_time%do_im_time_kpoints
       do_kpoints_from_Gamma = SUM(mp2_env%ri_rpa_im_time%kp_grid) > 0
       do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw
+      num_integ_points_freq = MAX(mp2_env%ri_g0w0%num_integ_points_freq, num_integ_points)
 
       ! For SOS-MP2 only gemm is implemented
       mm_style = wfc_mm_style_gemm
@@ -1411,7 +1412,6 @@ CONTAINS
          cut_memory = mp2_env%ri_rpa_im_time%cut_memory
          eps_filter_im_time = mp2_env%ri_rpa_im_time%eps_filter_im_time
          stabilize_exp = mp2_env%ri_rpa_im_time%stabilize_exp
-         num_integ_points_freq = MAX(mp2_env%ri_g0w0%num_integ_points_freq, num_integ_points)
 
          CALL alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, num_integ_points, &
                             num_integ_points_freq, fm_mat_Q, fm_mo_coeff_occ, fm_mo_coeff_virt, &
