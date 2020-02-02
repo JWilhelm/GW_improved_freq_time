@@ -3570,8 +3570,6 @@ CONTAINS
          ENDDO
       ENDIF
 
-      PRINT *, 'num_fit_points =', num_fit_points, 'vec_omega_fit_gw_sign_reorder =', vec_omega_fit_gw_sign_reorder
-
       !*** evaluate parameters for pade approximation
       ALLOCATE (coeff_pade(nparam_pade))
       ALLOCATE (omega_points_pade(nparam_pade))
