@@ -62,12 +62,12 @@ MODULE rpa_main
                                               mp_sendrecv,&
                                               mp_sum
    USE minimax_exp,                     ONLY: check_exp_minimax_range
+   USE mp2_grids,                       ONLY: get_clenshaw_grid,&
+                                              get_minimax_grid
    USE mp2_laplace,                     ONLY: SOS_MP2_postprocessing
    USE mp2_ri_grad_util,                ONLY: array2fm
    USE mp2_types,                       ONLY: integ_mat_buffer_type,&
                                               mp2_type
-   USE mp2_grids,                     ONLY: get_clenshaw_grid,&
-                                              get_minimax_grid
    USE qs_environment_types,            ONLY: qs_environment_type
    USE rpa_axk,                         ONLY: compute_axk_ener
    USE rpa_communication,               ONLY: initialize_buffer,&
@@ -219,7 +219,7 @@ CONTAINS
       INTEGER(KIND=int_8)                                :: mem
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: sub_proc_map
       LOGICAL                                            :: do_minimax_quad, my_open_shell, &
-                                                            skip_integ_group_opt, do_gw_im_time_mix_minimax_clenshaw
+                                                            skip_integ_group_opt
       REAL(KIND=dp) :: allowed_memory, avail_mem, E_Range, Emax, Emax_beta, Emin, Emin_beta, &
          mem_for_iaK, mem_for_QK, mem_min, mem_per_group, mem_real, needed_mem
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: BIb_C_2D, BIb_C_2D_beta, &
@@ -292,20 +292,20 @@ CONTAINS
          mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%num_integ_points_freq > num_integ_points
 
          IF (do_minimax_quad .AND. num_integ_points > 20) THEN
-            IF(mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw) THEN
-              ! we only do minimax for the time grid, where Braess & Hackbusch parameters are available 
-              ! up to 53 time points.
-              IF(num_integ_points > 53) THEN
-                 CALL cp_warn(__LOCATION__, &
-                              "The required number of quadrature point exceeds the maximum possible in the "// &
-                              "Minimax quadrature scheme. The number of quadrature point has been reset to 53.")
-                 num_integ_points = 53
-              END IF
+            IF (mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw) THEN
+               ! we only do minimax for the time grid, where Braess & Hackbusch parameters are available
+               ! up to 53 time points.
+               IF (num_integ_points > 53) THEN
+                  CALL cp_warn(__LOCATION__, &
+                               "The required number of quadrature point exceeds the maximum possible in the "// &
+                               "Minimax quadrature scheme. The number of quadrature point has been reset to 53.")
+                  num_integ_points = 53
+               END IF
             ELSE
-              CALL cp_warn(__LOCATION__, &
-                           "The required number of quadrature point exceeds the maximum possible in the "// &
-                           "Minimax quadrature scheme. The number of quadrature point has been reset to 20.")
-              num_integ_points = 20
+               CALL cp_warn(__LOCATION__, &
+                            "The required number of quadrature point exceeds the maximum possible in the "// &
+                            "Minimax quadrature scheme. The number of quadrature point has been reset to 20.")
+               num_integ_points = 20
             END IF
          END IF
       END IF
@@ -1302,9 +1302,9 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)  :: vec_Sigma_c_gw, vec_Sigma_c_gw_beta
       INTEGER :: count_ev_sc_GW, cut_memory, group_size_P, gw_corr_lev_tot, handle, handle3, &
          iter_ev_sc, jquad, max_iter_bse, mm_style, my_num_dgemm_call, nkp, nkp_self_energy, nmo, &
-         num_3c_repl, num_cells_dm, num_fit_points, num_points_corr, num_Z_vectors, number_of_rec, &
-         number_of_rec_axk, number_of_rec_beta, number_of_send, number_of_send_axk, &
-         number_of_send_beta, size_P, num_integ_points_freq
+         num_3c_repl, num_cells_dm, num_fit_points, num_integ_points_freq, num_points_corr, &
+         num_Z_vectors, number_of_rec, number_of_rec_axk, number_of_rec_beta, number_of_send, &
+         number_of_send_axk, number_of_send_beta, size_P
       INTEGER, ALLOCATABLE, DIMENSION(:) :: ikp_local, map_rec_size, map_rec_size_axk, &
          map_rec_size_beta, map_send_size, map_send_size_axk, map_send_size_beta, RPA_proc_map
       INTEGER, ALLOCATABLE, DIMENSION(:, :)              :: index_to_cell_3c, local_size_source, &
@@ -1313,9 +1313,9 @@ CONTAINS
       INTEGER, ALLOCATABLE, DIMENSION(:, :, :)           :: cell_to_index_3c
       INTEGER, DIMENSION(:), POINTER                     :: col_blk_size, prim_blk_sizes, &
                                                             RI_blk_sizes
-      LOGICAL :: do_apply_ic_corr_to_gw, do_gw_im_time, do_ic_model, do_kpoints_cubic_RPA, &
-         do_kpoints_from_Gamma, do_periodic, do_ri_Sigma_x, first_cycle, &
-         first_cycle_periodic_correction, my_open_shell, print_ic_values, do_gw_im_time_mix_minimax_clenshaw
+      LOGICAL :: do_apply_ic_corr_to_gw, do_gw_im_time, do_gw_im_time_mix_minimax_clenshaw, &
+         do_ic_model, do_kpoints_cubic_RPA, do_kpoints_from_Gamma, do_periodic, do_ri_Sigma_x, &
+         first_cycle, first_cycle_periodic_correction, my_open_shell, print_ic_values
       LOGICAL, ALLOCATABLE, DIMENSION(:, :, :, :, :)     :: has_mat_P_blocks
       REAL(KIND=dp) :: a_scaling, alpha, e_axk, e_axk_corr, e_fermi, e_fermi_beta, &
          eps_filter_im_time, eps_min_trans, ext_scaling, fermi_level_offset, my_flop_rate, omega, &
@@ -1338,15 +1338,14 @@ CONTAINS
       TYPE(dbcsr_p_type)                                 :: mat_dm, mat_L, mat_M_P_munu_occ, &
                                                             mat_M_P_munu_virt, mat_P_global_copy, &
                                                             mat_SinvVSinv
-      TYPE(dbcsr_p_type), DIMENSION(:), POINTER :: &
-          matrix_berry_im_mo_mo, &
-         matrix_berry_re_mo_mo
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_berry_im_mo_mo, &
+                                                            matrix_berry_re_mo_mo
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: mat_P_omega, mat_P_omega_beta, &
                                                             mat_P_omega_kp
       TYPE(dbcsr_t_type) :: t_3c_overl_int_gw_AO, t_3c_overl_int_gw_AO_beta, t_3c_overl_int_gw_RI, &
          t_3c_overl_int_gw_RI_beta, t_3c_overl_nnP_ic, t_3c_overl_nnP_ic_beta, &
          t_3c_overl_nnP_ic_reflected, t_3c_overl_nnP_ic_reflected_beta
-      TYPE(dbcsr_type), POINTER                          :: mat_work, mat_W
+      TYPE(dbcsr_type), POINTER                          :: mat_W, mat_work
       TYPE(integ_mat_buffer_type), ALLOCATABLE, &
          DIMENSION(:)                                    :: buffer_rec, buffer_rec_axk, &
                                                             buffer_rec_beta, buffer_send, &
@@ -1475,7 +1474,7 @@ CONTAINS
 
       END IF
 
-      IF(do_gw_im_time_mix_minimax_clenshaw) THEN
+      IF (do_gw_im_time_mix_minimax_clenshaw) THEN
          CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_integ_points_freq, &
                                 num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, ext_scaling, a_scaling, tj, wj)
          CALL get_minimax_grid(para_env, unit_nr, homo, Eigenval, num_integ_points, num_integ_points_freq, do_im_time, &
@@ -1499,13 +1498,13 @@ CONTAINS
       ELSE
          IF (my_open_shell) THEN
             CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_integ_points, &
-                                      num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, &
-                                      ext_scaling, a_scaling, tj, wj, &
-                                      homo_beta, virtual_beta, dimen_ia_beta, Eigenval_beta, fm_mat_S_beta)
+                                   num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, &
+                                   ext_scaling, a_scaling, tj, wj, &
+                                   homo_beta, virtual_beta, dimen_ia_beta, Eigenval_beta, fm_mat_S_beta)
          ELSE
             CALL get_clenshaw_grid(para_env, para_env_RPA, unit_nr, homo, virtual, Eigenval, num_integ_points, &
-                                      num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, &
-                                      ext_scaling, a_scaling, tj, wj)
+                                   num_integ_group, color_rpa_group, fm_mat_S, my_do_gw, &
+                                   ext_scaling, a_scaling, tj, wj)
          END IF
       END IF
 
