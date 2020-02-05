@@ -1001,20 +1001,6 @@ CONTAINS
             END DO
          END DO
 
-!JW 2del
-! BEGIN PRINTING
-!         CALL open_file("W_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-!                        file_position="APPEND")
-!         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,1)
-!         CALL close_file(iw)
-!
-!         CALL open_file("W_12", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-!                        file_position="APPEND")
-!         WRITE (iw, *) jquad, tj(jquad), wj(jquad), fm_mat_Q%local_data(1,2)
-!         CALL close_file(iw)
-! END PRINTING
-
-
          ! multiply with L from the left and the right to get the screened Coulomb interaction
          CALL cp_gemm('T', 'N', dimen_RI, dimen_RI, dimen_RI, 1.0_dp, fm_mat_L(1, 1)%matrix, fm_mat_Q, &
                       0.0_dp, fm_mat_work)
@@ -4750,8 +4736,6 @@ CONTAINS
                CALL copy_fm_to_dbcsr(fm_mat_W(jquad-num_integ_points_freq)%matrix, mat_W, keep_sparsity=.FALSE.)
             END IF
 
-            IF(para_env%mepos == 0) PRINT *, 'jquad =', jquad , '/', 2*num_integ_points_freq
-
             DO iquad = 1, num_fit_points
 
                IF(jquad .LE. num_integ_points_freq) THEN
@@ -4771,13 +4755,6 @@ CONTAINS
                                                     fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, fermi_level_offset, &
                                                     iquad*jquad, nmo, homo, eps_filter, omega_diff, count_ev_sc_GW, &
                                                     real_imaginary)
-
-! JW 2del                 IF(real_imaginary==1) THEN
-!                     CALL open_file("G_occ_ef_11", unit_number=iw, file_status="UNKNOWN", file_action="WRITE", &
-!                                    file_position="APPEND")
-!                     WRITE (iw, *) omega_diff, fm_scaled_dm_occ_tau%local_data(1,1)
-!                     CALL close_file(iw)
-!                  END IF
 
                   DO i_occ_virt = 1, 2
 
