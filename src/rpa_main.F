@@ -1413,7 +1413,7 @@ CONTAINS
          eps_filter_im_time = mp2_env%ri_rpa_im_time%eps_filter_im_time
          stabilize_exp = mp2_env%ri_rpa_im_time%stabilize_exp
 
-         CALL alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, num_integ_points, &
+         CALL alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, &
                             num_integ_points_freq, fm_mat_Q, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                             fm_matrix_L_RI_metric, mat_P_global, &
                             t_3c_O, matrix_s, kpoints, eps_filter_im_time, &

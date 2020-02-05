@@ -108,7 +108,6 @@ CONTAINS
       REAL(KIND=dp)                                      :: E_Range, Emax, Emax_beta, Emin, &
                                                             Emin_beta, max_error_min, scaling
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: x_tw
-      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:) :: tj_safe, wj_safe
 
       CALL timeset(routineN, handle)
 
@@ -286,8 +285,7 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_tj_from_clenshaw', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: handle, jquad
-      LOGICAL                                            :: my_open_shell
+      INTEGER                                            :: handle
 
       CALL timeset(routineN, handle)
 
@@ -799,9 +797,9 @@ CONTAINS
       INTEGER                                            :: handle, iii, info, jjj, jquad, lwork, &
                                                             num_x_nodes
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: iwork
-      REAL(KIND=dp)                                      :: chi2_min_jquad, multiplicator, omega
+      REAL(KIND=dp)                                      :: multiplicator, omega
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: sing_values, tau_wj_work, vec_UTy, work, &
-                                                            work_array, x_values, y_values
+                                                            x_values, y_values
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: mat_A, mat_SinvVSinvSigma, &
                                                             mat_SinvVSinvT, mat_U
 
