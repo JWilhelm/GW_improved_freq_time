@@ -1450,8 +1450,6 @@ CONTAINS
                                         ikp, iter_ev_sc, my_open_shell)
          END IF
 
-         PRINT *, 'CHECK 3'
-
          ! fit the self-energy on imaginary frequency axis and evaluate the fit on the MO energy of the SCF
          DO n_level_gw = 1, gw_corr_lev_tot
             ! processes perform different fits
@@ -1468,8 +1466,6 @@ CONTAINS
                                                do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
 
             CASE (gw_pade_approx)
-
-               PRINT *, 'CHECK 2'
 
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                       z_value, m_value, vec_Sigma_c_gw(:, :, ikp), &
@@ -3577,8 +3573,6 @@ CONTAINS
                              nparam_pade, omega_points_pade, coeff_pade, &
                              num_fit_points, n_level_gw_ref, output_unit)
       ENDIF
-
-      PRINT *, 'CHECK 1'
 
       IF (para_env%mepos == 2) THEN
 
