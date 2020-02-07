@@ -247,7 +247,6 @@ CONTAINS
 !> \param do_ri_Sigma_x ...
 !> \param my_do_gw ...
 !> \param first_cycle_periodic_correction ...
-!> \param do_gw_im_time_mix_minimax_clenshaw ...
 !> \param a_scaling ...
 !> \param Eigenval ...
 !> \param tj ...
@@ -282,7 +281,7 @@ CONTAINS
                                    nmo, num_integ_group, num_integ_points_freq, unit_nr, &
                                    gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                    do_minimax_quad, do_periodic, do_ri_Sigma_x, my_do_gw, &
-                                   first_cycle_periodic_correction, do_gw_im_time_mix_minimax_clenshaw, &
+                                   first_cycle_periodic_correction, &
                                    a_scaling, Eigenval, tj, vec_omega_fit_gw, vec_Sigma_x_gw, &
                                    delta_corr, Eigenval_last, Eigenval_scf, vec_W_gw, &
                                    fm_mat_S_gw, fm_mat_S_gw_work, &
@@ -301,7 +300,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_minimax_quad, do_periodic, &
                                                             do_ri_Sigma_x, my_do_gw
       LOGICAL, INTENT(OUT) :: first_cycle_periodic_correction
-      LOGICAL, INTENT(IN) :: do_gw_im_time_mix_minimax_clenshaw
       REAL(KIND=dp), INTENT(IN)                          :: a_scaling
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: Eigenval
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
@@ -4853,7 +4851,7 @@ CONTAINS
                                               fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                               fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
                                               fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, &
-                                              jquad, num_integ_points, nmo, &
+                                              jquad, nmo, &
                                               eps_filter, e_fermi, stabilize_exp, tau_tj, count_ev_sc_GW)
 
             CALL dbcsr_set(mat_W, 0.0_dp)
@@ -5201,7 +5199,6 @@ CONTAINS
 !> \param fm_scaled_dm_virt_tau ...
 !> \param Eigenval ...
 !> \param jquad ...
-!> \param num_integ_points ...
 !> \param nmo ...
 !> \param eps_filter ...
 !> \param e_fermi ...
@@ -5211,7 +5208,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE compute_Greens_function_time(mat_greens_fct_occ, mat_greens_fct_virt, matrix_s, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                            fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, &
-                                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, num_integ_points, nmo, &
+                                           fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau, Eigenval, jquad, nmo, &
                                            eps_filter, e_fermi, stabilize_exp, tau_tj, count_ev_sc_GW)
 
       TYPE(dbcsr_type), POINTER                          :: mat_greens_fct_occ, mat_greens_fct_virt
@@ -5219,7 +5216,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER :: fm_mo_coeff_occ, fm_mo_coeff_virt, fm_mo_coeff_occ_scaled, &
          fm_mo_coeff_virt_scaled, fm_scaled_dm_occ_tau, fm_scaled_dm_virt_tau
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
-      INTEGER, INTENT(IN)                                :: jquad, num_integ_points, nmo
+      INTEGER, INTENT(IN)                                :: jquad, nmo
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, e_fermi, stabilize_exp
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj
@@ -5360,7 +5357,7 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_Greens_function_freq', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: handle, ncol_local, nrow_local
+      INTEGER                                            :: handle, ncol_local
       INTEGER, DIMENSION(:), POINTER                     :: col_indices
       REAL(KIND=dp)                                      :: e_fermi
 
@@ -5368,17 +5365,16 @@ CONTAINS
 
       ! get info of fm_mo_coeff
       CALL cp_fm_get_info(matrix=fm_mo_coeff, &
-                          nrow_local=nrow_local, &
                           ncol_local=ncol_local, &
                           col_indices=col_indices)
 
       ! we have two different fermi levels for correcting occupied and virtual energy levels
       e_fermi = Eigenval(homo) + fermi_level_offset
-      CALL scale_mo_coeff(fm_mo_coeff_occ_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
+      CALL scale_mo_coeff(fm_mo_coeff_occ_scaled, fm_mo_coeff, e_fermi, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
       e_fermi = Eigenval(homo + 1) - fermi_level_offset
-      CALL scale_mo_coeff(fm_mo_coeff_virt_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
+      CALL scale_mo_coeff(fm_mo_coeff_virt_scaled, fm_mo_coeff, e_fermi, ncol_local, &
                           Eigenval, omega, real_imaginary, col_indices)
 
       CALL cp_gemm(transa="N", transb="T", m=nmo, n=nmo, k=nmo, alpha=1.0_dp, &
@@ -5430,19 +5426,18 @@ CONTAINS
 !> \param fm_mo_coeff_scaled ...
 !> \param fm_mo_coeff ...
 !> \param e_fermi ...
-!> \param nrow_local ...
 !> \param ncol_local ...
 !> \param Eigenval ...
 !> \param omega ...
 !> \param real_imaginary ...
 !> \param col_indices ...
 ! **************************************************************************************************
-   SUBROUTINE scale_mo_coeff(fm_mo_coeff_scaled, fm_mo_coeff, e_fermi, nrow_local, ncol_local, &
+   SUBROUTINE scale_mo_coeff(fm_mo_coeff_scaled, fm_mo_coeff, e_fermi, ncol_local, &
                              Eigenval, omega, real_imaginary, col_indices)
 
       TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff_scaled, fm_mo_coeff
       REAL(KIND=dp)                                      :: e_fermi
-      INTEGER, INTENT(IN)                                :: nrow_local, ncol_local
+      INTEGER, INTENT(IN)                                :: ncol_local
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval
       REAL(KIND=dp), INTENT(IN)                          :: omega
       INTEGER, INTENT(IN)                                :: real_imaginary

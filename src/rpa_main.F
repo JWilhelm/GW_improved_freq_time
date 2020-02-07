@@ -1547,7 +1547,7 @@ CONTAINS
                                       nmo, num_integ_group, num_integ_points_freq, unit_nr, &
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
-                                      first_cycle_periodic_correction, do_gw_im_time_mix_minimax_clenshaw, &
+                                      first_cycle_periodic_correction, &
                                       a_scaling, Eigenval, tj, vec_omega_fit_gw, vec_Sigma_x_gw, &
                                       delta_corr, Eigenval_last, Eigenval_scf, vec_W_gw, &
                                       fm_mat_S_gw, fm_mat_S_gw_work, &
@@ -1562,7 +1562,7 @@ CONTAINS
                                       nmo, num_integ_group, num_integ_points_freq, unit_nr, &
                                       gw_corr_lev_tot, num_fit_points, omega_max_fit, &
                                       do_minimax_quad, do_periodic, do_ri_Sigma_x,.NOT. do_im_time, &
-                                      first_cycle_periodic_correction, do_gw_im_time_mix_minimax_clenshaw, &
+                                      first_cycle_periodic_correction, &
                                       a_scaling, Eigenval, tj, vec_omega_fit_gw, vec_Sigma_x_gw, &
                                       delta_corr, Eigenval_last, Eigenval_scf, vec_W_gw, &
                                       fm_mat_S_gw, fm_mat_S_gw_work, &
