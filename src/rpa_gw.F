@@ -1466,14 +1466,13 @@ CONTAINS
                                                do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
 
             CASE (gw_pade_approx)
-
                CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                       z_value, m_value, vec_Sigma_c_gw(:, :, ikp), &
                                       mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                       Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, mp2_env%ri_g0w0%nparam_pade, &
                                       num_fit_points, crossing_search, homo, check_fit, &
                                       fermi_level_offset, &
-                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw), para_env)
+                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
 
             CASE DEFAULT
                CPABORT("Only two-model and Pade approximation are implemented.")
@@ -1497,7 +1496,7 @@ CONTAINS
                                          Eigenval_beta, Eigenval_scf_beta, n_level_gw, &
                                          gw_corr_lev_occ_beta, mp2_env%ri_g0w0%nparam_pade, &
                                          num_fit_points, crossing_search, homo_beta, check_fit, &
-                                         fermi_level_offset, do_im_time, para_env)
+                                         fermi_level_offset, do_im_time)
                CASE DEFAULT
                   CPABORT("Only two-model and Pade approximation are implemented.")
                END SELECT
@@ -3360,8 +3359,8 @@ CONTAINS
 
                END DO
 
-              delta = (Eigenval_scf(n_level_gw_ref) + vec_Sigma_x_minus_vxc_gw(n_level_gw_ref) &
-                       + REAL(func_val) - level_energ_GW)/  deriv_val_real
+              delta = (Eigenval_scf(n_level_gw_ref) + vec_Sigma_x_minus_vxc_gw(n_level_gw_ref) + REAL(func_val) - level_energ_GW)/ &
+                       deriv_val_real
 
                level_energ_GW = level_energ_GW - delta
 
@@ -3476,13 +3475,12 @@ CONTAINS
 !> \param check_fit ...
 !> \param fermi_level_offset ...
 !> \param do_gw_im_time ...
-!> \param para_env ...
 ! **************************************************************************************************
    SUBROUTINE continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
                                 z_value, m_value, vec_Sigma_c_gw, vec_Sigma_x_minus_vxc_gw, &
                                 Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, nparam_pade, &
                                 num_fit_points, crossing_search, homo, check_fit, &
-                                fermi_level_offset, do_gw_im_time, para_env)
+                                fermi_level_offset, do_gw_im_time)
 
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: vec_gw_energ
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: vec_omega_fit_gw
@@ -3496,7 +3494,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: check_fit
       REAL(KIND=dp), INTENT(IN)                          :: fermi_level_offset
       LOGICAL, INTENT(IN)                                :: do_gw_im_time
-      TYPE(cp_para_env_type), POINTER                    :: para_env
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'continuation_pade', &
          routineP = moduleN//':'//routineN
@@ -3504,10 +3501,10 @@ CONTAINS
       COMPLEX(KIND=dp)                                   :: im_unit, re_unit, sigma_c_pade
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:)        :: coeff_pade, omega_points_pade, &
                                                             Sigma_c_gw_reorder
-      INTEGER                                            :: handle, i_omega, jquad, n_level_gw_ref, &
-                                                            num_omega, output_unit
+      INTEGER                                            :: handle, jquad, n_level_gw_ref, &
+                                                            output_unit
       REAL(KIND=dp)                                      :: e_fermi, energy_val, level_energ_GW, &
-                                                            omega, sign_occ_virt
+                                                            sign_occ_virt
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: vec_omega_fit_gw_sign, &
                                                             vec_omega_fit_gw_sign_reorder
 
@@ -3573,30 +3570,6 @@ CONTAINS
                              nparam_pade, omega_points_pade, coeff_pade, &
                              num_fit_points, n_level_gw_ref, output_unit)
       ENDIF
-
-      IF (para_env%mepos == 2) THEN
-
-         PRINT *, ''
-         PRINT *, ''
-         PRINT *, 'n_level_gw_ref =', n_level_gw_ref
-         PRINT *, ''
-         PRINT *, 'omega (eV)     Sigma(omega) (eV) '
-         PRINT *, ''
-
-         num_omega = 8000
-
-         DO i_omega = 0, num_omega
-
-            omega = (-40.0_dp + REAL(i_omega)/REAL(num_omega)*80.0_dp)/evolt
-
-            CALL evaluate_pade_function(omega, nparam_pade, omega_points_pade, &
-                                        coeff_pade, sigma_c_pade)
-
-            PRINT *, omega*evolt, sigma_c_pade*evolt
-
-         END DO
-
-      END IF
 
       !*** calculate start_value for iterative cross-searching methods
       IF ((crossing_search == ri_rpa_g0w0_crossing_bisection) .OR. &
