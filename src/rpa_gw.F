@@ -54,7 +54,7 @@ MODULE rpa_gw
                                               ri_rpa_g0w0_crossing_newton,&
                                               ri_rpa_g0w0_crossing_none,&
                                               ri_rpa_g0w0_crossing_z_shot
-   USE kinds,                           ONLY: dp
+   USE kinds,                           ONLY: dp, default_path_length
    USE kpoint_types,                    ONLY: get_kpoint_info,&
                                               kpoint_create,&
                                               kpoint_release,&
@@ -1446,8 +1446,8 @@ CONTAINS
                                       mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                       Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, mp2_env%ri_g0w0%nparam_pade, &
                                       num_fit_points, crossing_search, homo, fermi_level_offset, &
-                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw))
-
+                                      do_im_time .AND. (.NOT. do_gw_im_time_mix_minimax_clenshaw), &
+                                      mp2_env%ri_g0w0%print_self_energy)
             CASE DEFAULT
                CPABORT("Only two-model and Pade approximation are implemented.")
             END SELECT
@@ -1470,7 +1470,8 @@ CONTAINS
                                          Eigenval_beta, Eigenval_scf_beta, n_level_gw, &
                                          gw_corr_lev_occ_beta, mp2_env%ri_g0w0%nparam_pade, &
                                          num_fit_points, crossing_search, homo_beta, &
-                                         fermi_level_offset, do_im_time)
+                                         fermi_level_offset, do_im_time, &
+                                         mp2_env%ri_g0w0%print_self_energy)
                CASE DEFAULT
                   CPABORT("Only two-model and Pade approximation are implemented.")
                END SELECT
@@ -2992,7 +2993,7 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: mat_A_gw, mat_B_gw
       INTEGER                                            :: handle4, ierr, iii, iiter, info, &
                                                             integ_range, jjj, jquad, kkk, &
-                                                            n_level_gw_ref, num_var, output_unit, &
+                                                            n_level_gw_ref, num_var, &
                                                             xpos, max_iter_fit
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: ipiv
       LOGICAL                                            :: could_exit
@@ -3001,8 +3002,6 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: Lambda_Im, Lambda_Re, stat_errors, &
                                                             vec_N_gw, vec_omega_fit_gw_sign
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: mat_N_gw
-
-      output_unit = cp_logger_get_default_io_unit()
 
       im_unit = (0.0_dp, 1.0_dp)
       re_unit = (1.0_dp, 0.0_dp)
@@ -3421,7 +3420,7 @@ CONTAINS
                                 z_value, m_value, vec_Sigma_c_gw, vec_Sigma_x_minus_vxc_gw, &
                                 Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, nparam_pade, &
                                 num_fit_points, crossing_search, homo, &
-                                fermi_level_offset, do_gw_im_time)
+                                fermi_level_offset, do_gw_im_time, print_self_energy)
 
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: vec_gw_energ
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: vec_omega_fit_gw
@@ -3433,7 +3432,7 @@ CONTAINS
                                                             nparam_pade, num_fit_points, &
                                                             crossing_search, homo
       REAL(KIND=dp), INTENT(IN)                          :: fermi_level_offset
-      LOGICAL, INTENT(IN)                                :: do_gw_im_time
+      LOGICAL, INTENT(IN)                                :: do_gw_im_time, print_self_energy
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'continuation_pade', &
          routineP = moduleN//':'//routineN
@@ -3442,11 +3441,12 @@ CONTAINS
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:)        :: coeff_pade, omega_points_pade, &
                                                             Sigma_c_gw_reorder
       INTEGER                                            :: handle, jquad, n_level_gw_ref, &
-                                                            output_unit
+                                                            output_unit, i_omega, num_omega
       REAL(KIND=dp)                                      :: e_fermi, energy_val, level_energ_GW, &
-                                                            sign_occ_virt
+                                                            sign_occ_virt, omega
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: vec_omega_fit_gw_sign, &
                                                             vec_omega_fit_gw_sign_reorder
+      CHARACTER(len=default_path_length)                 :: filename
 
       CALL timeset(routineN, handle)
 
@@ -3557,6 +3557,41 @@ CONTAINS
       CASE DEFAULT
          CPABORT("Only NONE, Z_SHOT, NEWTON, and BISECTION crossing search implemented.")
       END SELECT
+
+      IF(print_self_energy) THEN
+
+         IF(n_level_gw < 10 ) THEN
+            WRITE (filename, "(A21,I1)") "self_energy_level_000", n_level_gw_ref
+         ELSE  IF(n_level_gw < 100 ) THEN
+            WRITE (filename, "(A20,I2)") "self_energy_level_00", n_level_gw_ref
+         ELSE  IF(n_level_gw < 1000 ) THEN
+            WRITE (filename, "(A19,I3)") "self_energy_level_0", n_level_gw_ref
+         ELSE  
+            WRITE (filename, "(A18,I4)") "self_energy_level_", n_level_gw_ref
+         END IF
+   
+         OPEN (UNIT=n_level_gw_ref*1000, FILE=TRIM(filename))
+   
+         num_omega = 10000
+
+         WRITE(n_level_gw_ref*1000, "(2A42)") " omega (eV)     Sigma(omega) (eV)  ", &
+                                              "  omega - e_n^DFT - Sigma_n^x - v_n^xc (eV)"
+   
+         DO i_omega = 0, num_omega
+   
+            omega = -50.0_dp/evolt + REAL(i_omega)/REAL(num_omega)*100.0_dp/evolt
+   
+            CALL evaluate_pade_function(omega-e_fermi, nparam_pade, omega_points_pade, &
+                                        coeff_pade, sigma_c_pade)
+   
+            WRITE(n_level_gw_ref*1000, "(F12.2,2F17.5)") omega*evolt, &
+                                              REAL(sigma_c_pade)*evolt, &
+                                              (omega - Eigenval_scf(n_level_gw_ref) - &
+                                               vec_Sigma_x_minus_vxc_gw(n_level_gw_ref))*evolt
+   
+         END DO
+
+      END IF
 
       DEALLOCATE (vec_omega_fit_gw_sign)
       DEALLOCATE (Sigma_c_gw_reorder)
