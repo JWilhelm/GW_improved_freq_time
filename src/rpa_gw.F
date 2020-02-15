@@ -909,8 +909,6 @@ CONTAINS
                           row_indices=row_indices, &
                           col_indices=col_indices)
 
-      PRINT *, 'Fermi level before =', fermi_level_offset*evolt
-
       ! Fermi level offset should have a maximum such that the Fermi level of occupied orbitals
       ! is always closer to occupied orbitals than to virtual orbitals and vice versa
       ! that means, the Fermi level offset is at most as big as half the bandgap
@@ -922,8 +920,6 @@ CONTAINS
          fermi_level_offset = (Eigenval_beta(homo_beta+1) - Eigenval_beta(homo_beta))*0.5_dp
       END IF
       END IF
-
-      PRINT *, 'Fermi level after =', fermi_level_offset*evolt
 
       IF (.NOT. do_im_time) THEN
          ! calculate [1+Q(iw')]^-1
