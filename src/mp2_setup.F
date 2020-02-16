@@ -164,7 +164,7 @@ CONTAINS
                                 i_val=mp2_env%ri_g0w0%iter_evGW)
       CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%SC_GW0_ITER", &
                                 i_val=mp2_env%ri_g0w0%iter_sc_GW0)
-      CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%EPS_SC_ITER", &
+      CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%EPS_ITER", &
                                 r_val=mp2_env%ri_g0w0%eps_sc_iter)
       CALL section_vals_val_get(mp2_section, "RI_RPA%RI_G0W0%HF_LIKE_EV_START", &
                                 l_val=mp2_env%ri_g0w0%hf_like_ev_start)

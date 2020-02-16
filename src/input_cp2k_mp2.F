@@ -10,6 +10,7 @@
 !> \author MDB
 ! **************************************************************************************************
 MODULE input_cp2k_mp2
+   USE cp_units,                        ONLY: cp_unit_to_cp2k
    USE bibliography,                    ONLY: Bates2013,&
                                               DelBen2012,&
                                               DelBen2013,&
@@ -764,13 +765,13 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="EPS_SC_ITER", &
+      CALL keyword_create(keyword, __LOCATION__, name="EPS_ITER", &
                           description="Target accuracy for scGW0 and eigenvalue self-consistency. "// &
                           "If the G0W0 HOMO-LUMO gap differs by less than the "// &
                           "target accuracy during the iteration, the scGW0 or eigenvalue "// &
                           "self-consistency cycle stops. ", &
                           usage="EPS_ITER 0.00005", &
-                          default_r_val=0.00136055_dp, &
+                          default_r_val=cp_unit_to_cp2k(value=0.00136_dp, unit_str="eV"), &
                           unit_str="eV")
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
