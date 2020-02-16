@@ -1899,9 +1899,9 @@ CONTAINS
                                       nkp_self_energy, do_kpoints_cubic_RPA, Eigenval_kp, Eigenval_scf_kp, iter_ev_sc)
             END IF
 
-            ! if HOMO-LUMO gap differs by less than mp2_env%ri_g0w0%eps_ev_sc_iter, exit ev sc GW loop
+            ! if HOMO-LUMO gap differs by less than mp2_env%ri_g0w0%eps_sc_iter, exit ev sc GW loop
             IF (ABS(Eigenval(homo) - Eigenval_last(homo) - Eigenval(homo + 1) + Eigenval_last(homo + 1)) &
-                < mp2_env%ri_g0w0%eps_ev_sc_iter) THEN
+                < mp2_env%ri_g0w0%eps_sc_iter) THEN
                EXIT
             END IF
 

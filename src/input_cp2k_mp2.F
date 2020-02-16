@@ -697,6 +697,23 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+      CALL keyword_create(keyword, __LOCATION__, name="PRINT_FIT_ERROR", &
+                          variants=(/"FIT_ERROR"/), &
+                          description="Print the statistical error due to the fitting. This error in most cases "// &
+                          "is very pessimistic (e.g. can be a factor of 10 too large).", &
+                          usage="FIT_ERROR", &
+                          default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="MAX_ITER_FIT", &
+                          description="Maximum number of iterations for the Levenberg-Marquard fit.", &
+                          usage="MAX_ITER_FIT 10000", &
+                          default_i_val=10000)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
       CALL keyword_create(keyword, __LOCATION__, name="CHECK_FIT", &
                           description="If true, the self-energy on the imaginary axis and the fit are printed"// &
                           "the file self_energy_of_MO_<level>_for_imaginary_frequency.", &
@@ -733,29 +750,43 @@ CONTAINS
 
       CALL keyword_create(keyword, __LOCATION__, name="EV_SC_ITER", &
                           description="Maximum number of iterations for eigenvalue self-consistency cycle. The "// &
-                          "computational effort of RPA and GW scales linearly with this number. "// &
-                          "Eigenvalue self-consistency is not implemented for cubic-scaling GW.", &
+                          "computational effort of GW scales linearly with this number. ", &
                           usage="EV_SC_ITER 3", &
                           default_i_val=1)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="EPS_EV_SC_ITER", &
-                          description="Target accuracy for the eigenvalue self-consistency. "// &
-                          "If the G0W0 HOMO-LUMO gap differs by less than the "// &
-                          "target accuracy during the iteration, the eigenvalue "// &
-                          "self-consistency cycle stops. Unit: Hartree.", &
-                          usage="EPS_EV_SC_ITER 0.00005", &
-                          default_r_val=0.00005_dp, &
-                          unit_str="")
+      CALL keyword_create(keyword, __LOCATION__, name="SC_GW0_ITER", &
+                          description="Maximum number of iterations for GW0 self-consistency cycle. The "// &
+                          "computational effort of GW is not much affected by the number of scGW0 cycles. ", &
+                          usage="SC_GW0_ITER 3", &
+                          default_i_val=1)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="EV_SC_GW_REMOVE_NEG_VIRT_ENERGIES", &
-                          variants=(/"REMOVE_NEG"/), &
-                          description="Set all GW energies of virtual orbitals which are below the HOMO to the "// &
-                          "value of the last eigenvalue-selfconsistency cycle.", &
-                          usage="EV_SC_GW_REMOVE_NEG_VIRT_ENERGIES", &
+      CALL keyword_create(keyword, __LOCATION__, name="EPS_SC_ITER", &
+                          description="Target accuracy for scGW0 and eigenvalue self-consistency. "// &
+                          "If the G0W0 HOMO-LUMO gap differs by less than the "// &
+                          "target accuracy during the iteration, the scGW0 or eigenvalue "// &
+                          "self-consistency cycle stops. ", &
+                          usage="EPS_ITER 0.00005", &
+                          default_r_val=0.00136055_dp, &
+                          unit_str="eV")
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="HF_LIKE_EV_START", &
+                          description="If true, take as input for GW/RPA corrected HF-like eigenvalues according "// &
+                          "to PRB 83, 115103 (2011), Sec. IV.", &
+                          usage="HF_LIKE_EV_START", &
+                          default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="PRINT_GW_DETAILS", &
+                          description="If true, prints additional information on the quasiparticle energies.", &
+                          usage="PRINT_GW_DETAILS", &
                           default_l_val=.TRUE., &
                           lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)
@@ -906,40 +937,7 @@ CONTAINS
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
-      ! here we generate a subsection for additional printing
-      CALL create_print_section(subsection)
-      CALL section_add_subsection(section, subsection)
-      CALL section_release(subsection)
-
-
    END SUBROUTINE create_ri_g0w0
-
-   SUBROUTINE create_print_section(section)
-      TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_section', &
-         routineP = moduleN//':'//routineN
-
-      TYPE(keyword_type), POINTER                        :: keyword
-
-      CPASSERT(.NOT. ASSOCIATED(section))
-      CALL section_create(section, __LOCATION__, name="PRINT", &
-                          description="Parameters for GW related output.", &
-                          n_keywords=1, n_subsections=0, repeats=.FALSE.)
-
-      NULLIFY (keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="", &
-                          variants=(/"SELF_ENERGY"/), &
-                          description="If true, print the self-energy for all levels for real energy "// &
-                          "together with the straight line to see the quasiparticle energy as intersection.", &
-                          usage="SELF_ENERGY TRUE", &
-                          default_l_val=.FALSE., &
-                          lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
-   END SUBROUTINE
 
 ! **************************************************************************************************
 !> \brief ...
