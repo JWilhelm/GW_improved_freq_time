@@ -4709,6 +4709,7 @@ CONTAINS
       mo_end = homo + gw_corr_lev_virt
       CPASSERT(mo_end - mo_start + 1 == gw_corr_lev_tot)
 
+      vec_Sigma_c_gw = (0.0_dp, 0.0_dp)
       ALLOCATE (vec_Sigma_c_gw_pos_tau(gw_corr_lev_tot, num_integ_points))
       vec_Sigma_c_gw_pos_tau = 0.0_dp
       ALLOCATE (vec_Sigma_c_gw_neg_tau(gw_corr_lev_tot, num_integ_points))
