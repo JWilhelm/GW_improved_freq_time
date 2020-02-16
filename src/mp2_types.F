@@ -132,7 +132,7 @@ MODULE mp2_types
       LOGICAL                  :: check_fit
       INTEGER                  :: crossing_search
       REAL(KIND=dp)            :: fermi_level_offset
-      INTEGER                  :: iter_ev_sc, iter_sc_GW0
+      INTEGER                  :: iter_evGW, iter_sc_GW0
       REAL(KIND=dp)            :: eps_sc_iter
       LOGICAL                  :: hf_like_ev_start, &
                                   print_gw_details, &

@@ -93,7 +93,7 @@ MODULE rpa_gw
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'rpa_gw'
 
-   PUBLIC :: allocate_matrices_gw_im_time, allocate_matrices_gw, GW_matrix_operations, GW_postprocessing, &
+   PUBLIC :: allocate_matrices_gw_im_time, allocate_matrices_gw, compute_W, compute_QP_energies, &
              deallocate_matrices_gw_im_time, deallocate_matrices_gw
 
 CONTAINS
@@ -851,7 +851,7 @@ CONTAINS
 !> \param fm_mat_S_gw_beta ...
 !> \param fm_mat_S_gw_work_beta ...
 ! **************************************************************************************************
-   SUBROUTINE GW_matrix_operations(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, &
+   SUBROUTINE compute_W(vec_Sigma_c_gw, dimen_nm_gw, dimen_RI, gw_corr_lev_occ, &
                                    gw_corr_lev_virt, homo, jquad, nmo, num_fit_points, num_integ_points, &
                                    do_bse, do_im_time, do_periodic, do_gw_im_time_mix_minimax_clenshaw, &
                                    first_cycle_periodic_correction, fermi_level_offset, &
@@ -906,7 +906,7 @@ CONTAINS
          INTENT(INOUT), OPTIONAL                         :: vec_W_gw_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mat_S_gw_beta, fm_mat_S_gw_work_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'GW_matrix_operations', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_W', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_global, iiB, iquad, j_global, &
@@ -1036,7 +1036,7 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE GW_matrix_operations
+   END SUBROUTINE compute_W
 
 ! **************************************************************************************************
 !> \brief ...
@@ -1220,7 +1220,6 @@ CONTAINS
 !> \param do_kpoints_cubic_RPA ...
 !> \param Eigenval_kp ...
 !> \param Eigenval_scf_kp ...
-!> \param iter_ev_sc ...
 !> \param vec_Sigma_c_gw_beta ...
 !> \param gw_corr_lev_occ_beta ...
 !> \param gw_corr_lev_virt_beta ...
@@ -1236,7 +1235,7 @@ CONTAINS
 !> \param t_3c_overl_int_gw_RI_beta ...
 !> \param t_3c_overl_int_gw_AO_beta ...
 ! **************************************************************************************************
-   SUBROUTINE GW_postprocessing(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
+   SUBROUTINE compute_QP_energies(vec_Sigma_c_gw, count_ev_sc_GW, gw_corr_lev_occ, &
                                 gw_corr_lev_tot, gw_corr_lev_virt, homo, &
                                 nmo, num_fit_points, num_integ_points, num_integ_points_freq, &
                                 num_points_corr, unit_nr, do_apply_ic_corr_to_gw, do_im_time, &
@@ -1252,7 +1251,7 @@ CONTAINS
                                 t_3c_overl_int_gw_RI, t_3c_overl_int_gw_AO, matrix_berry_im_mo_mo, &
                                 matrix_berry_re_mo_mo, mat_W, matrix_s, &
                                 kpoints, mp2_env, qs_env, &
-                                nkp_self_energy, do_kpoints_cubic_RPA, Eigenval_kp, Eigenval_scf_kp, iter_ev_sc, &
+                                nkp_self_energy, do_kpoints_cubic_RPA, Eigenval_kp, Eigenval_scf_kp, &
                                 vec_Sigma_c_gw_beta, gw_corr_lev_occ_beta, gw_corr_lev_virt_beta, homo_beta, &
                                 e_fermi_beta, Eigenval_beta, Eigenval_last_beta, Eigenval_scf_beta, &
                                 vec_Sigma_x_gw_beta, ic_corr_list_beta, fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, &
@@ -1299,7 +1298,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_kpoints_cubic_RPA
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
          INTENT(INOUT)                                   :: Eigenval_kp, Eigenval_scf_kp
-      INTEGER, INTENT(INOUT)                             :: iter_ev_sc
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(INOUT), OPTIONAL     :: vec_Sigma_c_gw_beta
       INTEGER, INTENT(IN), OPTIONAL                      :: gw_corr_lev_occ_beta, &
@@ -1317,7 +1315,7 @@ CONTAINS
       TYPE(dbcsr_t_type), OPTIONAL                       :: t_3c_overl_int_gw_RI_beta, &
                                                             t_3c_overl_int_gw_AO_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'GW_postprocessing', &
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_QP_energies', &
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: crossing_search, handle, ikp, &
@@ -1444,7 +1442,7 @@ CONTAINS
             m_value = 0.0_dp
 
             CALL get_eigenval_for_conti(Eigenval, Eigenval_scf, Eigenval_kp, Eigenval_scf_kp, kpoints, &
-                                        ikp, iter_ev_sc, my_open_shell)
+                                        ikp, my_open_shell)
          END IF
 
          ! fit the self-energy on imaginary frequency axis and evaluate the fit on the MO energy of the SCF
@@ -2902,15 +2900,14 @@ CONTAINS
 !> \param Eigenval_scf_kp ...
 !> \param kpoints ...
 !> \param ikp ...
-!> \param iter_ev_sc ...
 !> \param my_open_shell ...
 ! **************************************************************************************************
-   SUBROUTINE get_eigenval_for_conti(Eigenval, Eigenval_scf, Eigenval_kp, Eigenval_scf_kp, kpoints, ikp, iter_ev_sc, my_open_shell)
+   SUBROUTINE get_eigenval_for_conti(Eigenval, Eigenval_scf, Eigenval_kp, Eigenval_scf_kp, kpoints, ikp, my_open_shell)
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: Eigenval, Eigenval_scf
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :), &
          INTENT(INOUT)                                   :: Eigenval_kp, Eigenval_scf_kp
       TYPE(kpoint_type), POINTER                         :: kpoints
-      INTEGER, INTENT(IN)                                :: ikp, iter_ev_sc
+      INTEGER, INTENT(IN)                                :: ikp
       LOGICAL, INTENT(IN)                                :: my_open_shell
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'get_eigenval_for_conti', &
@@ -2921,9 +2918,6 @@ CONTAINS
       TYPE(mo_set_type), POINTER                         :: mo_set
 
       CALL timeset(routineN, handle)
-
-      ! only implemented for non-evscGW
-      CPASSERT(iter_ev_sc == 1)
 
       CALL get_kpoint_info(kpoints, nkp=nkp)
 
