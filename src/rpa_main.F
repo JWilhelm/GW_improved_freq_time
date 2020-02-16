@@ -289,6 +289,7 @@ CONTAINS
       ELSE
          num_integ_points = mp2_env%ri_rpa%rpa_num_quad_points
          input_integ_group_size = mp2_env%ri_rpa%rpa_integ_group_size
+         IF(do_im_time) mp2_env%ri_rpa%minimax_quad = .TRUE.
          do_minimax_quad = mp2_env%ri_rpa%minimax_quad
          mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw = mp2_env%ri_g0w0%num_integ_points_freq > num_integ_points
 
@@ -1386,6 +1387,7 @@ CONTAINS
          ext_scaling = 0.2_dp
          omega_max_fit = mp2_env%ri_g0w0%omega_max_fit
          fermi_level_offset = mp2_env%ri_g0w0%fermi_level_offset
+         IF(iter_sc_GW0 .NE. 1) CPABORT("scGW0 only implemented for low-scaling GW (IM_TIME section).")
       END IF
 
       IF (do_kpoints_cubic_RPA .AND. do_ri_sos_laplace_mp2) THEN
