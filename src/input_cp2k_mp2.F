@@ -10,7 +10,6 @@
 !> \author MDB
 ! **************************************************************************************************
 MODULE input_cp2k_mp2
-   USE cp_units,                        ONLY: cp_unit_to_cp2k
    USE bibliography,                    ONLY: Bates2013,&
                                               DelBen2012,&
                                               DelBen2013,&
@@ -25,13 +24,14 @@ MODULE input_cp2k_mp2
                                               low_print_level,&
                                               medium_print_level,&
                                               silent_print_level
+   USE cp_units,                        ONLY: cp_unit_to_cp2k
    USE input_constants,                 ONLY: &
         do_eri_gpw, do_eri_mme, do_eri_os, do_potential_coulomb, do_potential_id, &
         do_potential_long, do_potential_short, do_potential_truncated, do_potential_tshpsc, &
-        gaussian, gw_no_print_exx, gw_pade_approx, gw_print_exx, gw_read_exx, gw_skip_for_regtest, &
-        gw_two_pole_model, mp2_method_direct, mp2_method_gpw, mp2_method_none, &
-        mp2_ri_optimize_basis, numerical, ri_default, ri_mp2_laplace, ri_mp2_method_gpw, &
-        ri_rpa_g0w0_crossing_bisection, ri_rpa_g0w0_crossing_newton, ri_rpa_g0w0_crossing_none, &
+        eri_default, gaussian, gw_no_print_exx, gw_pade_approx, gw_print_exx, gw_read_exx, &
+        gw_skip_for_regtest, gw_two_pole_model, mp2_method_direct, mp2_method_gpw, &
+        mp2_method_none, mp2_ri_optimize_basis, numerical, ri_default, ri_mp2_laplace, &
+        ri_mp2_method_gpw, ri_rpa_g0w0_crossing_bisection, ri_rpa_g0w0_crossing_newton, &
         ri_rpa_g0w0_crossing_z_shot, ri_rpa_method_gpw, wfc_mm_style_gemm, wfc_mm_style_syrk
    USE input_cp2k_hfx,                  ONLY: create_hfx_section
    USE input_keyword_types,             ONLY: keyword_create,&
@@ -185,14 +185,15 @@ CONTAINS
                           "(MME method is faster but experimental, forces not yet implemented)."// &
                           "Obara-Saika (OS) for the Coulomb operator can only be used for non-periodic calculations.", &
                           usage="ERI_METHOD MME", &
-                          enum_c_vals=s2a("GPW", "MME", "OS"), &
-                          enum_i_vals=(/do_eri_gpw, do_eri_mme, do_eri_os/), &
-                          enum_desc=s2a("Uses Gaussian Plane Wave method [DelBen2013].", &
+                          enum_c_vals=s2a("DEFAULT", "GPW", "MME", "OS"), &
+                          enum_i_vals=(/eri_default, do_eri_gpw, do_eri_mme, do_eri_os/), &
+                          enum_desc=s2a("Use default ERI method (for periodic systems: GPW, for molecules: OS, "// &
+                                        "for MP2 and RI-MP2: GPW in any case).", &
+                                        "Uses Gaussian Plane Wave method [DelBen2013].", &
                                         "Uses MiniMax-Ewald method (experimental, ERI_MME subsection, only for fully periodic "// &
                                         "systems with orthorhombic cells).", &
-                                        "Uses Obara-Saika method (only for two-center integrals, only for gas phase"// &
-                                        "and only for cubic-scaling RPA and GW)."), &
-                          default_i_val=do_eri_gpw)
+                                        "Use analytical Obara-Saika method."), &
+                          default_i_val=eri_default)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -255,7 +256,7 @@ CONTAINS
       CALL section_release(subsection)
 
       ! here we generate an imag. time subsection to use with RPA or Laplace-SOS-MP2
-      CALL create_ri_im_time(subsection)
+      CALL create_low_scaling(subsection)
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
@@ -545,17 +546,6 @@ CONTAINS
 
       CALL keyword_create( &
          keyword, __LOCATION__, &
-         name="RI_G0W0", &
-         variants=(/"GW"/), &
-         description="Decide whether to perform an RI_G0W0 calculation on top of RI_RPA. ", &
-         usage="RI_G0W0", &
-         default_l_val=.FALSE., &
-         lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
-      CALL keyword_create( &
-         keyword, __LOCATION__, &
          name="RI_AXK", &
          variants=(/"AXK"/), &
          description="Decide whether to perform an RPA-AXK calculation.", &
@@ -650,11 +640,18 @@ CONTAINS
       TYPE(section_type), POINTER                        :: subsection
 
       CPASSERT(.NOT. ASSOCIATED(section))
-      CALL section_create(section, __LOCATION__, name="RI_G0W0", &
+      CALL section_create(section, __LOCATION__, name="GW", &
                           description="Parameters influencing the RI-G0W0 method", &
                           n_keywords=24, n_subsections=1, repeats=.FALSE.)
 
       NULLIFY (keyword, subsection)
+
+      CALL keyword_create(keyword, __LOCATION__, name="_SECTION_PARAMETERS_", &
+                          description="Activates cubic-scaling RPA, GW and Laplace-SOS-MP2 calculations.", &
+                          usage="&GW .TRUE.", &
+                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="CORR_MOS_OCC", &
                           variants=(/"CORR_OCC"/), &
@@ -698,23 +695,6 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="PRINT_FIT_ERROR", &
-                          variants=(/"FIT_ERROR"/), &
-                          description="Print the statistical error due to the fitting. This error in most cases "// &
-                          "is very pessimistic (e.g. can be a factor of 10 too large).", &
-                          usage="FIT_ERROR", &
-                          default_l_val=.FALSE., &
-                          lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="MAX_ITER_FIT", &
-                          description="Maximum number of iterations for the Levenberg-Marquard fit.", &
-                          usage="MAX_ITER_FIT 10000", &
-                          default_i_val=10000)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
       CALL keyword_create(keyword, __LOCATION__, name="CHECK_FIT", &
                           description="If true, the self-energy on the imaginary axis and the fit are printed"// &
                           "the file self_energy_of_MO_<level>_for_imaginary_frequency.", &
@@ -727,14 +707,13 @@ CONTAINS
       CALL keyword_create(keyword, __LOCATION__, name="CROSSING_SEARCH", &
                           description="Determines, how the self_energy is evaluated on the real axis.", &
                           usage="CROSSING_SEARCH Z_SHOT", &
-                          enum_c_vals=s2a("NONE", "Z_SHOT", "NEWTON", "BISECTION"), &
-                          enum_i_vals=(/ri_rpa_g0w0_crossing_none, ri_rpa_g0w0_crossing_z_shot, &
+                          enum_c_vals=s2a("Z_SHOT", "NEWTON", "BISECTION"), &
+                          enum_i_vals=(/ri_rpa_g0w0_crossing_z_shot, &
                                         ri_rpa_g0w0_crossing_newton, ri_rpa_g0w0_crossing_bisection/), &
-                          enum_desc=s2a("Evaluate the correlation self-energy at the energy eigenvalue of SCF.", &
-                                        "Calculate the derivative of Sigma and out of it Z. Then extrapolate using Z.", &
+                          enum_desc=s2a("Calculate the derivative of Sigma and out of it Z. Then extrapolate using Z.", &
                                         "Make a Newton-Raphson fix point iteration.", &
                                         "Make a bisection fix point iteration."), &
-                          default_i_val=ri_rpa_g0w0_crossing_z_shot)
+                          default_i_val=ri_rpa_g0w0_crossing_newton)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -766,30 +745,14 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="EPS_ITER", &
-                          description="Target accuracy for scGW0 and eigenvalue self-consistency. "// &
+                          description="Target accuracy for the eigenvalue self-consistency. "// &
                           "If the G0W0 HOMO-LUMO gap differs by less than the "// &
-                          "target accuracy during the iteration, the scGW0 or eigenvalue "// &
-                          "self-consistency cycle stops. ", &
-                          usage="EPS_ITER 0.00005", &
+                          "target accuracy during the iteration, the eigenvalue "// &
+                          "self-consistency cycle stops. Unit: Hartree.", &
+                          usage="EPS_EV_SC_ITER 0.00005", &
                           default_r_val=cp_unit_to_cp2k(value=0.00136_dp, unit_str="eV"), &
                           unit_str="eV")
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
 
-      CALL keyword_create(keyword, __LOCATION__, name="HF_LIKE_EV_START", &
-                          description="If true, take as input for GW/RPA corrected HF-like eigenvalues according "// &
-                          "to PRB 83, 115103 (2011), Sec. IV.", &
-                          usage="HF_LIKE_EV_START", &
-                          default_l_val=.FALSE., &
-                          lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="PRINT_GW_DETAILS", &
-                          description="If true, prints additional information on the quasiparticle energies.", &
-                          usage="PRINT_GW_DETAILS", &
-                          default_l_val=.TRUE., &
-                          lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -938,7 +901,43 @@ CONTAINS
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
+      ! here we generate a subsection for additional printing
+      CALL create_print_section(subsection)
+      CALL section_add_subsection(section, subsection)
+      CALL section_release(subsection)
+
    END SUBROUTINE create_ri_g0w0
+
+! **************************************************************************************************
+!> \brief ...
+!> \param section ...
+! **************************************************************************************************
+   SUBROUTINE create_print_section(section)
+      TYPE(section_type), POINTER                        :: section
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_section', &
+         routineP = moduleN//':'//routineN
+
+      TYPE(keyword_type), POINTER                        :: keyword
+
+      CPASSERT(.NOT. ASSOCIATED(section))
+      CALL section_create(section, __LOCATION__, name="PRINT", &
+                          description="Parameters for GW related output.", &
+                          n_keywords=1, n_subsections=0, repeats=.FALSE.)
+
+      NULLIFY (keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="", &
+                          variants=(/"SELF_ENERGY"/), &
+                          description="If true, print the self-energy for all levels for real energy "// &
+                          "together with the straight line to see the quasiparticle energy as intersection.", &
+                          usage="SELF_ENERGY TRUE", &
+                          default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+   END SUBROUTINE
 
 ! **************************************************************************************************
 !> \brief ...
@@ -1140,10 +1139,10 @@ CONTAINS
 !> \brief ...
 !> \param section ...
 ! **************************************************************************************************
-   SUBROUTINE create_ri_im_time(section)
+   SUBROUTINE create_low_scaling(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_im_time', &
+      CHARACTER(len=*), PARAMETER :: routineN = 'create_low_scaling', &
          routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
@@ -1151,25 +1150,28 @@ CONTAINS
 
       CPASSERT(.NOT. ASSOCIATED(section))
       CALL section_create( &
-         section, __LOCATION__, name="IM_TIME", &
-         description="Cubic scaling RI-RPA, GW and Laplace-SOS-MP2 method using the imaginary time formalism.", &
+         section, __LOCATION__, name="LOW_SCALING", &
+         description="Cubic scaling RI-RPA, GW and Laplace-SOS-MP2 method using the imaginary time formalism. "// &
+         "EPS_GRID in WFC_GPW section controls accuracy / req. memory for 3-center integrals. "// &
+         "SORT_BASIS EXP should be specified in DFT section.", &
          n_keywords=12, n_subsections=2, repeats=.FALSE.)
 
       NULLIFY (keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="_SECTION_PARAMETERS_", &
                           description="Activates cubic-scaling RPA, GW and Laplace-SOS-MP2 calculations.", &
-                          usage="&im_time .TRUE.", &
+                          usage="&LOW_SCALING .TRUE.", &
                           default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="MEMORY_CUT", &
-                          description="Cuts the memory of the M_munu_P^occ/virt matrix by the factor given. "// &
-                          "The calculation is slowed down when using a high value of MEMORY_CUT. A high value for "// &
-                          "MEMORY_CUT is recommended for large systems in order not to run out of memory.", &
+                          description="Reduces memory for sparse tensor contractions by this factor. "// &
+                          "A high value leads to some loss of performance. "// &
+                          "This memory reduction factor applies to storage of the tensors 'M occ' / 'M virt' "// &
+                          "but does not reduce storage of '3c ints'.", &
                           usage="MEMORY_CUT 16", &
-                          default_i_val=1)
+                          default_i_val=5)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -1191,8 +1193,17 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create( &
+         keyword, __LOCATION__, name="EPS_FILTER", &
+         description="Determines a threshold for the DBCSR based multiply."// &
+         "Normally, this EPS_FILTER determines accuracy and timing of low-scaling RPA and GW calculations.", &
+         usage="EPS_FILTER 1.0E-10 ", type_of_var=real_t, &
+         default_r_val=1.0E-9_dp)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create( &
          keyword, __LOCATION__, name="EPS_FILTER_FACTOR", &
-         description="Multiply EPS_FILTER of WFC_GPW section with this factor to determine filter epsilon "// &
+         description="Multiply EPS_FILTER with this factor to determine filter epsilon "// &
          "for DBCSR based multiply P(it)=(Mocc(it))^T*Mvirt(it) "// &
          "Default should be kept.", &
          type_of_var=real_t, &
@@ -1257,11 +1268,10 @@ CONTAINS
 
       CALL keyword_create( &
          keyword, __LOCATION__, &
-         name="MAX_BLOCK_SIZE_SQRT", &
-         description="Square root of maximum block size for splitting blocks of matrix representation of large tensors "// &
-         "along the combined dimension. "// &
-         "Atomic blocks are split in order to allow for better load balance.", &
-         default_i_val=10)
+         name="MIN_BLOCK_SIZE", &
+         description="Minimum tensor block size. Adjusting this value may have minor effect on "// &
+         "performance but default should be good enough.", &
+         default_i_val=8)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

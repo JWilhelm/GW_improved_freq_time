@@ -563,9 +563,11 @@ CONTAINS
 !> \param do_ri_sos_laplace_mp2 ...
 !> \param first_cycle ...
 !> \param count_ev_sc_GW ...
+!> \param iter_sc_GW0 ...
 !> \param virtual ...
 !> \param Eigenval ...
 !> \param Eigenval_last ...
+!> \param Eigenval_scf ...
 !> \param homo ...
 !> \param omega ...
 !> \param omega_old ...
@@ -589,14 +591,15 @@ CONTAINS
 !> \param my_num_dgemm_call ...
 !> \param my_flop_rate ...
 ! **************************************************************************************************
-   SUBROUTINE calc_mat_Q(fm_mat_S, do_ri_sos_laplace_mp2, first_cycle, count_ev_sc_GW, virtual, Eigenval, Eigenval_last, &
+   SUBROUTINE calc_mat_Q(fm_mat_S, do_ri_sos_laplace_mp2, first_cycle, count_ev_sc_GW, iter_sc_GW0, virtual, &
+                         Eigenval, Eigenval_last, Eigenval_scf, &
                          homo, omega, omega_old, jquad, mm_style, dimen_RI, dimen_ia, alpha, fm_mat_Q, fm_mat_Q_gemm, &
                          para_env_RPA, do_bse, fm_mat_Q_static_bse_gemm, RPA_proc_map, buffer_rec, buffer_send, number_of_send, &
                          map_send_size, map_rec_size, local_size_source, my_num_dgemm_call, my_flop_rate)
       TYPE(cp_fm_type), POINTER                          :: fm_mat_S
       LOGICAL, INTENT(IN)                                :: do_ri_sos_laplace_mp2, first_cycle
-      INTEGER, INTENT(IN)                                :: count_ev_sc_GW, virtual
-      REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval, Eigenval_last
+      INTEGER, INTENT(IN)                                :: count_ev_sc_GW, iter_sc_GW0, virtual
+      REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: Eigenval, Eigenval_last, Eigenval_scf
       INTEGER, INTENT(IN)                                :: homo
       REAL(KIND=dp), INTENT(IN)                          :: omega, omega_old
       INTEGER, INTENT(IN)                                :: jquad, mm_style, dimen_RI, dimen_ia
@@ -625,10 +628,14 @@ CONTAINS
       IF (do_ri_sos_laplace_mp2) THEN
          ! the first index of tau_tj starts with 0 (see mp2_weights)
          CALL calc_fm_mat_S_laplace(fm_mat_S, first_cycle, homo, virtual, Eigenval, omega, omega_old)
-
       ELSE
-         CALL calc_fm_mat_S_rpa(fm_mat_S, first_cycle, count_ev_sc_GW, virtual, Eigenval, Eigenval_last, &
-                                homo, omega, omega_old)
+         IF (iter_sc_GW0 == 1) THEN
+            CALL calc_fm_mat_S_rpa(fm_mat_S, first_cycle, count_ev_sc_GW, virtual, Eigenval, Eigenval_last, &
+                                   homo, omega, omega_old)
+         ELSE
+            CALL calc_fm_mat_S_rpa(fm_mat_S, first_cycle, count_ev_sc_GW, virtual, Eigenval_scf, Eigenval_scf, &
+                                   homo, omega, omega_old)
+         END IF
       END IF
 
       CALL contract_S_to_Q(mm_style, dimen_RI, dimen_ia, alpha, fm_mat_S, fm_mat_Q_gemm, para_env_RPA, &
@@ -1032,7 +1039,6 @@ CONTAINS
 !> \param mat_SinvVSinv ...
 !> \param mat_P_omega ...
 !> \param mat_P_omega_kp ...
-!> \param t_3c_overl_int ...
 !> \param t_3c_M ...
 !> \param t_3c_O ...
 !> \param mat_work ...
@@ -1048,7 +1054,7 @@ CONTAINS
                               wkp_W, cfm_mat_Q, fm_mat_L, fm_mat_RI_global_work, fm_mat_work, &
                               fm_mo_coeff_occ_scaled, fm_mo_coeff_virt_scaled, mat_dm, mat_L, &
                               mat_SinvVSinv, mat_P_omega, mat_P_omega_kp, &
-                              t_3c_overl_int, t_3c_M, t_3c_O, &
+                              t_3c_M, t_3c_O, &
                               mat_work, &
                               fm_mo_coeff_occ_beta, fm_mo_coeff_virt_beta, mat_P_omega_beta)
 
@@ -1056,7 +1062,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: fm_mo_coeff_occ, fm_mo_coeff_virt, &
                                                             fm_scaled_dm_occ_tau, &
                                                             fm_scaled_dm_virt_tau
-      INTEGER, DIMENSION(:), INTENT(IN)                  :: ikp_local
+      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(IN)     :: ikp_local
       INTEGER, ALLOCATABLE, DIMENSION(:, :), &
          INTENT(INOUT)                                   :: index_to_cell_3c
       INTEGER, ALLOCATABLE, DIMENSION(:, :, :), &
@@ -1073,7 +1079,6 @@ CONTAINS
                                                             fm_mo_coeff_virt_scaled
       TYPE(dbcsr_p_type), INTENT(INOUT)                  :: mat_dm, mat_L, mat_SinvVSinv
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: mat_P_omega, mat_P_omega_kp
-      TYPE(dbcsr_t_type), ALLOCATABLE, DIMENSION(:, :)   :: t_3c_overl_int
       TYPE(dbcsr_t_type)                                 :: t_3c_M
       TYPE(dbcsr_t_type), ALLOCATABLE, DIMENSION(:, :)   :: t_3c_O
       TYPE(dbcsr_type), POINTER                          :: mat_work
@@ -1145,11 +1150,10 @@ CONTAINS
       DO i_size = 1, SIZE(t_3c_O, 1)
          DO j_size = 1, SIZE(t_3c_O, 2)
             CALL dbcsr_t_destroy(t_3c_O(i_size, j_size))
-            CALL dbcsr_t_destroy(t_3c_overl_int(i_size, j_size))
          ENDDO
       ENDDO
 
-      DEALLOCATE (t_3c_O, t_3c_overl_int)
+      DEALLOCATE (t_3c_O)
       CALL dbcsr_t_destroy(t_3c_M)
 
       DEALLOCATE (has_mat_P_blocks)

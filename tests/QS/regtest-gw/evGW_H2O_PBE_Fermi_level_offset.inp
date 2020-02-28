@@ -1,5 +1,5 @@
 &GLOBAL
-  PROJECT  H2O-ri-rpa-lr-mme
+  PROJECT  G0W0_H2O_PBE0
   PRINT_LEVEL MEDIUM
   RUN_TYPE ENERGY
   &TIMINGS
@@ -10,13 +10,13 @@
   METHOD Quickstep
   &DFT
     BASIS_SET_FILE_NAME  HFX_BASIS
-    POTENTIAL_FILE_NAME  POTENTIAL
+    POTENTIAL_FILE_NAME  GTH_POTENTIALS
     &MGRID
       CUTOFF  100
-      REL_CUTOFF  30
+      REL_CUTOFF  20
     &END MGRID
     &POISSON
-      PERIODIC XYZ
+      PERIODIC NONE
       POISSON_SOLVER WAVELET
     &END POISSON
     &QS
@@ -34,10 +34,14 @@
       &END
     &END SCF
     &XC
-      &XC_FUNCTIONAL NONE
+      &XC_FUNCTIONAL PBE
+        &PBE
+          SCALE_X 0.7500000
+          SCALE_C 1.0000000
+        &END
       &END XC_FUNCTIONAL
       &HF
-        FRACTION 1.0000000
+        FRACTION 0.2500000
         &SCREENING
           EPS_SCHWARZ 1.0E-8
           SCREEN_ON_INITIAL_P FALSE
@@ -45,17 +49,15 @@
       &END HF
       &WF_CORRELATION
         METHOD  RI_RPA_GPW
-        &INTERACTION_POTENTIAL
-          POTENTIAL_TYPE LONGRANGE
-          OMEGA 0.5
-        &END INTERACTION_POTENTIAL
+        &RI_METRIC
+          POTENTIAL_TYPE IDENTITY
+        &END
         &WFC_GPW
-          CUTOFF  100
-          REL_CUTOFF 20
+        &END
+        &LOW_SCALING
+            MEMORY_CUT 1
         &END
         &RI_RPA
-          RPA_NUM_QUAD_POINTS 15
-          MINIMAX
           &HF
             FRACTION 1.0000000
             &SCREENING
@@ -63,29 +65,33 @@
               SCREEN_ON_INITIAL_P FALSE
             &END SCREENING
           &END HF
+          RPA_NUM_QUAD_POINTS 10
+          &GW
+            CORR_MOS_OCC          10
+            CORR_MOS_VIRT         10
+            EV_SC_ITER            5
+            FERMI_LEVEL_OFFSET    20.0
+          &END GW
         &END RI_RPA
-        ERI_METHOD MME
         MEMORY  200.
         NUMBER_PROC  1
-        DO_SVD
-        EPS_SVD 1.0E-15
       &END
     &END XC
   &END DFT
   &SUBSYS
     &CELL
       ABC [angstrom]  8.000   8.000  8.000
-      PERIODIC XYZ
+      PERIODIC NONE
     &END CELL
     &KIND H
       BASIS_SET  DZVP-GTH
       BASIS_SET RI_AUX  RI_DZVP-GTH
-      POTENTIAL  GTH-HF-q1
+      POTENTIAL  GTH-PBE-q1
     &END KIND
     &KIND O
       BASIS_SET  DZVP-GTH
       BASIS_SET RI_AUX  RI_DZVP-GTH
-      POTENTIAL  GTH-HF-q6
+      POTENTIAL  GTH-PBE-q6
     &END KIND
     &TOPOLOGY
       COORD_FILE_NAME  H2O_gas.xyz

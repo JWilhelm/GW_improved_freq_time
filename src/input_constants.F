@@ -971,8 +971,7 @@ MODULE input_constants
                                                wfc_mm_style_syrk = 12
 
    ! G0W0 parameter
-   INTEGER, PARAMETER, PUBLIC               :: ri_rpa_g0w0_crossing_none = 0, &
-                                               ri_rpa_g0w0_crossing_z_shot = 1, &
+   INTEGER, PARAMETER, PUBLIC               :: ri_rpa_g0w0_crossing_z_shot = 1, &
                                                ri_rpa_g0w0_crossing_newton = 2, &
                                                ri_rpa_g0w0_crossing_bisection = 3, &
                                                gw_no_print_exx = 5, &
@@ -1105,7 +1104,8 @@ MODULE input_constants
 
    INTEGER, PARAMETER, PUBLIC               :: do_eri_gpw = 0, &
                                                do_eri_mme = 1, &
-                                               do_eri_os = 2
+                                               do_eri_os = 2, &
+                                               eri_default = 3
 
    ! Cell optimisation constraints
    INTEGER, PARAMETER, PUBLIC               :: fix_none = 0, &
