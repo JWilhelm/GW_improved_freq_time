@@ -28,7 +28,7 @@ MODULE minimax_exp
    USE cp_log_handling,                 ONLY: cp_to_string
    USE kinds,                           ONLY: dp
    USE minimax_exp_k15,                 ONLY: check_range_k15,&
-                                              get_minimax_coeff_k15,&
+                                              get_minimax_coeff_k15,get_minimax_coeff_k35,&
                                               get_minimax_numerical_error
    USE minimax_exp_k53,                 ONLY: R_max,&
                                               R_mm,&
@@ -131,15 +131,16 @@ CONTAINS
       INTEGER                                            :: ierr
 
       IF (k .LE. 15) THEN
-         CALL check_range_k15(k, Rc, ierr)
-         IF (ierr .EQ. 1) THEN ! Rc too small for k15 coeffs --> use k53
-            CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
-            IF (PRESENT(which_coeffs)) which_coeffs = mm_k53
-         ELSE
-            CPASSERT(ierr .EQ. 0)
-            CALL get_minimax_coeff_k15(k, Rc, aw, mm_error)
-            IF (PRESENT(which_coeffs)) which_coeffs = mm_k15
-         ENDIF
+!         CALL check_range_k15(k, Rc, ierr)
+!         IF (ierr .EQ. 1) THEN ! Rc too small for k15 coeffs --> use k53
+!            CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
+!            IF (PRESENT(which_coeffs)) which_coeffs = mm_k53
+!         ELSE
+!            CPASSERT(ierr .EQ. 0)
+!            CALL get_minimax_coeff_k15(k, Rc, aw, mm_error)
+!            IF (PRESENT(which_coeffs)) which_coeffs = mm_k15
+!         ENDIF
+         CALL get_minimax_coeff_k35(k, Rc, aw) 
       ELSEIF (k .LE. 53) THEN
          CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
          IF (PRESENT(which_coeffs)) which_coeffs = mm_k53

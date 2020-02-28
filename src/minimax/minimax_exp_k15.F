@@ -24,7 +24,7 @@ MODULE minimax_exp_k15
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'minimax_exp_k15'
 
-   PUBLIC :: get_minimax_coeff_k15, check_range_k15, get_minimax_numerical_error
+   PUBLIC :: get_minimax_coeff_k15, check_range_k15, get_minimax_numerical_error, get_minimax_coeff_k35
 
 CONTAINS
 
@@ -8797,5 +8797,91 @@ CONTAINS
       fit_coef(12, 30) = 5.2129451486951780E+02_dp
 
    END SUBROUTINE get_fit_coef_k15_lo
+
+   SUBROUTINE get_minimax_coeff_k35(k,E_range, aw)
+      INTEGER, INTENT(IN)                                :: k
+      REAL(KIND=dp), INTENT(IN)                          :: E_range
+      REAL(KIND=dp), DIMENSION(2*k), INTENT(OUT)         :: aw
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_minimax_coeff_k35', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, icoef, kkk
+      REAL(KIND=dp)                                      :: L_b, R_max, R_min, R_transf, U_b
+      REAL(KIND=dp), DIMENSION(0:12, 2*k)                :: fit_coef
+
+      CALL timeset(routineN, handle)
+
+    IF(E_range < 50.0_dp) THEN
+ aw(:) = (/ &
+7.033988371446608413e-03_dp, &
+3.767850499909157491e-02_dp, &
+9.548956929385225834e-02_dp, &
+1.857641080388680588e-01_dp, &
+3.177931242546740420e-01_dp, &
+5.068349720755180865e-01_dp, &
+7.766836181145695406e-01_dp, &
+1.162850265160941809e+00_dp, &
+1.716918904966855619e+00_dp, &
+2.513446536933385822e+00_dp, &
+3.662265506487610622e+00_dp, &
+5.333971089569838675e+00_dp, &
+7.826870009792441962e+00_dp, &
+1.183096041629603867e+01_dp, &
+1.812041315189024532e-02_dp, &
+4.360100180643627227e-02_dp, &
+7.288193546283167068e-02_dp, &
+1.091825618563318362e-01_dp, &
+1.573755091244313786e-01_dp, &
+2.246220974614587806e-01_dp, &
+3.209242807427824529e-01_dp, &
+4.598971434864580488e-01_dp, &
+6.604758550584348686e-01_dp, &
+9.505077347494197415e-01_dp, &
+1.374650674447938092e+00_dp, &
+2.015511063587495766e+00_dp, &
+3.069017646840952906e+00_dp, &
+5.294222991564441649e+00_dp /)
+
+    ELSE IF(E_range < 70.0_dp) THEN
+
+
+    ELSE IF(E_range < 100.0_dp) THEN
+
+
+    ELSE IF(E_range < 150.0_dp) THEN
+
+
+    ELSE IF(E_range < 300.0_dp) THEN
+
+
+    ELSE IF(E_range < 600.0_dp) THEN
+
+
+    ELSE IF(E_range < 1.0E3_dp) THEN
+
+
+    ELSE IF(E_range < 1.5E3_dp) THEN
+
+
+    ELSE IF(E_range < 3.0E3_dp) THEN
+
+
+    ELSE IF(E_range < 1.0E4_dp) THEN
+
+
+    ELSE IF(E_range < 3.0E4_dp) THEN
+
+
+    ELSE
+
+
+    END IF
+
+
+      CALL timestop(handle)
+
+   END SUBROUTINE get_minimax_coeff_k35
+
 
 END MODULE minimax_exp_k15
