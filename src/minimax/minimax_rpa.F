@@ -19,7 +19,7 @@ MODULE minimax_rpa
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'minimax_rpa'
 
-   PUBLIC get_rpa_minimax_coeff
+   PUBLIC get_rpa_minimax_coeff, get_rpa_minimax_coeff_larger_grid
 
 CONTAINS
 
@@ -10110,5 +10110,96 @@ CONTAINS
       fit_coef(1:13, 1:40) = coefdata(1:13, 1:40, irange)
 
    END SUBROUTINE get_fit_coef_k20
+
+   SUBROUTINE get_rpa_minimax_coeff_larger_grid(k, E_range, aw)
+      INTEGER                                            :: k
+      REAL(KIND=dp)                                      :: E_range
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: aw
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_rpa_minimax_coeff_larger_grid', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER :: handle
+
+      CALL timeset(routineN, handle)
+
+      CALL get_fit_coef_k14_larger_grid(E_range, aw)
+      
+      CALL timestop(handle)
+
+   END SUBROUTINE
+
+   SUBROUTINE get_fit_coef_k14_larger_grid(E_range, aw)
+
+      REAL(KIND=dp)                                      :: E_range
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: aw
+
+    IF(E_range < 50.0_dp) THEN
+ aw(:) = (/ &
+1.691616982578584005e-01_dp, &
+5.283987610227506293e-01_dp, &
+9.536668128678216227e-01_dp, &
+1.500389044803120075e+00_dp, &
+2.242874447366657087e+00_dp, &
+3.286214130806066613e+00_dp, &
+4.784267535040377162e+00_dp, &
+6.968749910097460365e+00_dp, &
+1.020039942712022984e+01_dp, &
+1.507133402556000057e+01_dp, &
+2.265109213018257961e+01_dp, &
+3.523291379607916696e+01_dp, &
+5.940064854687805251e+01_dp, &
+1.278174496860328304e+02_dp, &
+3.417550875476200178e-01_dp, &
+3.841242171538420402e-01_dp, &
+4.755101620472157453e-01_dp, &
+6.301270680948238834e-01_dp, &
+8.720699038885839638e-01_dp, &
+1.239790409788825265e+00_dp, &
+1.794139381700487590e+00_dp, &
+2.633411518203423896e+00_dp, &
+3.925071235067261188e+00_dp, &
+5.985210702871802901e+00_dp, &
+9.521045442636138390e+00_dp, &
+1.655887398605294081e+01_dp, &
+3.540068226370404858e+01_dp, &
+1.341529271851660212e+02_dp /)
+
+    ELSE IF(E_range < 70.0_dp) THEN
+
+
+    ELSE IF(E_range < 100.0_dp) THEN
+
+
+    ELSE IF(E_range < 150.0_dp) THEN
+
+
+    ELSE IF(E_range < 300.0_dp) THEN
+
+
+    ELSE IF(E_range < 600.0_dp) THEN
+
+
+    ELSE IF(E_range < 1.0E3_dp) THEN
+
+
+    ELSE IF(E_range < 1.5E3_dp) THEN
+
+
+    ELSE IF(E_range < 3.0E3_dp) THEN
+
+
+    ELSE IF(E_range < 1.0E4_dp) THEN
+
+
+    ELSE IF(E_range < 3.0E4_dp) THEN
+
+
+    ELSE 
+
+
+   END IF
+
+   END SUBROUTINE 
 
 END MODULE minimax_rpa
