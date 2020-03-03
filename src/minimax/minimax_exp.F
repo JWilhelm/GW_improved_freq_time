@@ -130,7 +130,7 @@ CONTAINS
 
       INTEGER                                            :: ierr
 
-      IF (k .LE. 15) THEN
+      IF (k .LE. 40) THEN
 !         CALL check_range_k15(k, Rc, ierr)
 !         IF (ierr .EQ. 1) THEN ! Rc too small for k15 coeffs --> use k53
 !            CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
@@ -142,8 +142,8 @@ CONTAINS
 !         ENDIF
          CALL get_minimax_coeff_k35(k, Rc, aw) 
       ELSEIF (k .LE. 53) THEN
-         CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
-         IF (PRESENT(which_coeffs)) which_coeffs = mm_k53
+        CALL get_minimax_coeff_k53(k, Rc, aw, mm_error)
+        IF (PRESENT(which_coeffs)) which_coeffs = mm_k53
       ELSE
          CPABORT("No minimax approximations available for k = "//cp_to_string(k))
       ENDIF

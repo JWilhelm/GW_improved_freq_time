@@ -25,7 +25,7 @@ MODULE mp2_grids
                                               mp_comm_split_direct,&
                                               mp_sum
    USE minimax_exp,                     ONLY: get_exp_minimax_coeff
-   USE minimax_rpa,                     ONLY: get_rpa_minimax_coeff, get_rpa_minimax_coeff_larger_grid
+   USE minimax_rpa,                     ONLY: get_rpa_minimax_coeff_larger_grid, get_rpa_minimax_coeff
    USE mp2_types,                       ONLY: mp2_type
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_environment_type
