@@ -851,7 +851,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: dimen_nm_gw, dimen_RI, gw_corr_lev_occ, &
                                                             gw_corr_lev_virt, homo, jquad, nmo, &
                                                             num_fit_points, num_integ_points
-      LOGICAL, INTENT(IN) :: do_bse, do_im_time, do_periodic
+      LOGICAL, INTENT(IN)                                :: do_bse, do_im_time, do_periodic
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
       REAL(KIND=dp), INTENT(INOUT)                       :: fermi_level_offset
       REAL(KIND=dp), INTENT(IN)                          :: fermi_level_offset_input
@@ -1253,8 +1253,8 @@ CONTAINS
          homo, nmo, num_fit_points, num_integ_points
       INTEGER                                            :: num_points_corr
       INTEGER, INTENT(IN)                                :: unit_nr
-      LOGICAL, INTENT(IN) :: do_apply_ic_corr_to_gw, do_im_time, do_periodic, &
-         do_ri_Sigma_x
+      LOGICAL, INTENT(IN)                                :: do_apply_ic_corr_to_gw, do_im_time, &
+                                                            do_periodic, do_ri_Sigma_x
       LOGICAL, INTENT(INOUT) :: first_cycle_periodic_correction
       REAL(KIND=dp), INTENT(INOUT)                       :: e_fermi
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter, fermi_level_offset, &
@@ -1445,7 +1445,7 @@ CONTAINS
                                                   mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                                   Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, num_poles, &
                                                   num_fit_points, crossing_search, homo, stop_crit, &
-                                                  fermi_level_offset, do_im_time )
+                                                  fermi_level_offset, do_im_time)
 
                CASE (gw_pade_approx)
                   CALL continuation_pade(vec_gw_energ, vec_omega_fit_gw, &
@@ -1453,7 +1453,7 @@ CONTAINS
                                          mp2_env%ri_g0w0%vec_Sigma_x_minus_vxc_gw(:, 1, ikp), &
                                          Eigenval, Eigenval_scf, n_level_gw, gw_corr_lev_occ, mp2_env%ri_g0w0%nparam_pade, &
                                          num_fit_points, crossing_search, homo, fermi_level_offset, &
-                                         do_im_time,  mp2_env%ri_g0w0%print_self_energy, count_ev_sc_GW)
+                                         do_im_time, mp2_env%ri_g0w0%print_self_energy, count_ev_sc_GW)
                CASE DEFAULT
                   CPABORT("Only two-model and Pade approximation are implemented.")
                END SELECT
@@ -4524,8 +4524,7 @@ CONTAINS
                                            mp2_env, matrix_berry_re_mo_mo, matrix_berry_im_mo_mo, &
                                            first_cycle_periodic_correction, kpoints, num_fit_points, fm_mo_coeff, &
                                            do_ri_Sigma_x, vec_Sigma_x_gw, unit_nr, do_beta)
-      INTEGER, INTENT(IN)                                :: num_integ_points, &
-                                                            nmo
+      INTEGER, INTENT(IN)                                :: num_integ_points, nmo
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj, tj, wj
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
@@ -4548,7 +4547,7 @@ CONTAINS
                                                             weights_sin_tf_t_to_w
       COMPLEX(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :), INTENT(INOUT)               :: vec_Sigma_c_gw
-      LOGICAL, INTENT(IN) :: do_periodic
+      LOGICAL, INTENT(IN)                                :: do_periodic
       INTEGER, INTENT(IN)                                :: num_points_corr
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(INOUT)                                   :: delta_corr
@@ -4570,14 +4569,16 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_self_energy_cubic_gw', &
          routineP = moduleN//':'//routineN
 
-      COMPLEX(KIND=dp)                                   :: im_unit, re_im
+      COMPLEX(KIND=dp)                                   :: im_unit
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :)     :: delta_corr_omega
-      INTEGER :: gw_lev_end, gw_lev_start, handle, handle3, i_occ_virt, iquad, jquad, mo_end, &
-         mo_start, n, n_level_gw, n_level_gw_ref, real_imaginary, unit_nr_prv
-      LOGICAL                                            :: do_occ, do_virt, memory_info, my_do_beta
-      REAL(KIND=dp) :: ext_scaling, omega, omega_diff, omega_i, omega_sign, sign_occ_virt, &
-         t_i_Clenshaw, tau, weight, weight_cos, weight_i, weight_sin
-      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: Sigma_c_gw_tmp
+      INTEGER                                            :: gw_lev_end, gw_lev_start, handle, &
+                                                            handle3, iquad, jquad, mo_end, &
+                                                            mo_start, n, n_level_gw, &
+                                                            n_level_gw_ref, unit_nr_prv
+      LOGICAL                                            :: memory_info, my_do_beta
+      REAL(KIND=dp)                                      :: ext_scaling, omega, omega_i, omega_sign, &
+                                                            sign_occ_virt, t_i_Clenshaw, tau, &
+                                                            weight_cos, weight_i, weight_sin
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :) :: vec_Sigma_c_gw_cos_omega, &
          vec_Sigma_c_gw_cos_tau, vec_Sigma_c_gw_neg_tau, vec_Sigma_c_gw_pos_tau, &
          vec_Sigma_c_gw_sin_omega, vec_Sigma_c_gw_sin_tau

@@ -148,8 +148,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
-      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, &
-                                                            num_integ_points
+      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mo_coeff_occ, &
                                                             fm_mo_coeff_virt
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_matrix_L_RI_metric

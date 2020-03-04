@@ -149,8 +149,7 @@ CONTAINS
                                                             e_fermi
       REAL(KIND=dp), DIMENSION(0:num_integ_points), &
          INTENT(IN)                                      :: tau_tj
-      INTEGER, INTENT(IN)                                :: cut_memory, &
-                                                            unit_nr
+      INTEGER, INTENT(IN)                                :: cut_memory, unit_nr
       TYPE(mp2_type), POINTER                            :: mp2_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
       REAL(KIND=dp), INTENT(IN)                          :: stabilize_exp
