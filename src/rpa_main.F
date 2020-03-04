@@ -295,7 +295,7 @@ CONTAINS
          num_integ_points = mp2_env%ri_rpa%rpa_num_quad_points
          input_integ_group_size = mp2_env%ri_rpa%rpa_integ_group_size
 
-         IF (my_do_gw) THEN
+         IF (my_do_gw .AND. do_minimax_quad) THEN
             IF (.NOT. ANY(num_integ_points == (/26, 28, 30, 32, 34/))) THEN
                CALL cp_warn(__LOCATION__, &
                             "Please use NUM_INTEG_POINTS 26, 28, 30, 32, or 34 for low-scaling GW to "// &
