@@ -300,8 +300,8 @@ CONTAINS
 
          IF (do_minimax_quad .AND. num_integ_points > 20) THEN
             IF(my_do_gw) THEN
-              IF(.NOT. ANY(num_integ_points == (/ 20,22,24,26,28,30,32 /)))  THEN
-                CPABORT("Please use 20, 22, 24, 26, 28, 30 or 32 time/frequency points for low-scaling GW.")
+              IF(.NOT. ANY(num_integ_points == (/ 20,22,24,26,28,30,32, 34, 40 /)))  THEN
+                CPABORT("Please use 20, 22, 24, 26, 28, 30, 32, 34, 40 time/frequency points for low-scaling GW.")
               END IF
             ELSE IF (mp2_env%ri_g0w0%do_gw_im_time_mix_minimax_clenshaw) THEN
                ! we only do minimax for the time grid, where Braess & Hackbusch parameters are available
